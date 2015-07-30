@@ -213,13 +213,16 @@ func Set(frame int, col int, line int, color color.Color) {
 }
 
 func Roll() {
-	for i := 0; i < (2*screenWidth+motifWidth)/2; i++ {
+	for i :=  (screenWidth+motifWidth)/2; i > 0; i-- {
 		ws2811.SetBitmap(Bitmap[0][i*16 : i*16+1024])
 		ws2811.Render()
 		ws2811.Wait()
 
-		ws2811.SetBitmap(Bitmap[1][i*16+8 : i*16+8+1024])
+		ws2811.SetBitmap(Bitmap[1][i*16-8 : i*16-8+1024])
 		ws2811.Render()
 		ws2811.Wait()
 	}
+	ws2811.SetBitmap(Bitmap[0][0 : 1024])
+ 	ws2811.Render()
+ 	ws2811.Wait()
 }
