@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	nyancat.Init(32)
+	nyancat.Init(64)
 	defer ws2811.Fini()
 
 	for true {
