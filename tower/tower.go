@@ -17,6 +17,7 @@ package tower
 
 import (
 	"github.com/heia-fr/telecom-tower/bitmapfont"
+	"github.com/heia-fr/telecom-tower/color"
 	"github.com/heia-fr/telecom-tower/ws2811"
 )
 
@@ -30,15 +31,19 @@ func Init(brightness int) {
 	ws2811.Init(18, 1024, brightness)
 }
 
-func Write(text string, font bitmapfont.Font, color ws2811.Color) {
+func Shutdown() {
+	ws2811.Clear()
+	ws2811.Render()
+	ws2811.Wait()
+	ws2811.Fini()
+}
+
+func Write(text string, font bitmapfont.Font, color color.Color) {
 	W.Write(text, font, color)
 }
 
-func Finish() {
-	W.Finish()
-}
-
 func Roll() {
+	W.Finish()
 	for i := 0; i < W.Columns()/2; i++ {
 		ws2811.SetBitmap(W.Bitmap[0][i*16 : i*16+1024])
 		ws2811.Render()

@@ -62,8 +62,7 @@ void ws2811_set_bitmap(ws2811_t *ws2811, void* a, int len) {
 */
 import "C"
 import "unsafe"
-
-type Color uint32
+import "github.com/heia-fr/telecom-tower/color"
 
 func Init(gpioPin int, ledCount int, brightness int) int {
 	C.ledstring.channel[0].gpionum = C.int(gpioPin)
@@ -87,7 +86,7 @@ func Wait() int {
 	return res
 }
 
-func SetLed(index int, value Color) {
+func SetLed(index int, value color.Color) {
 	C.ws2811_set_led(&C.ledstring, C.int(index), C.uint32_t(value))
 }
 
@@ -95,10 +94,6 @@ func Clear() {
 	C.ws2811_clear(&C.ledstring)
 }
 
-func SetBitmap(a []Color) {
+func SetBitmap(a []color.Color) {
 	C.ws2811_set_bitmap(&C.ledstring, unsafe.Pointer(&a[0]), C.int(len(a)*4))
-}
-
-func RGB(r int, g int, b int) Color {
-	return Color(r)<<16 + Color(g)<<8 + Color(b)
 }

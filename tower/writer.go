@@ -16,34 +16,34 @@ package tower
 
 import (
 	"github.com/heia-fr/telecom-tower/bitmapfont"
+	"github.com/heia-fr/telecom-tower/color"
 	"github.com/heia-fr/telecom-tower/cp850"
-	"github.com/heia-fr/telecom-tower/ws2811"
 )
 
 type Writer struct {
-	Bitmap [2][]ws2811.Color
+	Bitmap [2][]color.Color
 	pos    int
 }
 
 func NewWriter() *Writer {
 	w := new(Writer)
 	w.pos = 0
-	w.Bitmap[0] = make([]ws2811.Color, screenHeight*screenWidth)
-	w.Bitmap[1] = make([]ws2811.Color, screenHeight*screenWidth)
+	w.Bitmap[0] = make([]color.Color, screenHeight*screenWidth)
+	w.Bitmap[1] = make([]color.Color, screenHeight*screenWidth)
 	return w
 }
 
 func (w *Writer) checkSize(size int) {
 	for i := 0; i < len(w.Bitmap); i++ {
 		if cap(w.Bitmap[i]) < size {
-			t := make([]ws2811.Color, size)
+			t := make([]color.Color, size)
 			copy(t, w.Bitmap[i])
 			w.Bitmap[i] = t
 		}
 	}
 }
 
-func (w *Writer) Write(text string, font bitmapfont.Font, color ws2811.Color) {
+func (w *Writer) Write(text string, font bitmapfont.Font, color color.Color) {
 	t := cp850.StringToCp850(text)
 
 	delta := len(t) * font.Width * screenHeight
