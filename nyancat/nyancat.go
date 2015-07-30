@@ -16,6 +16,7 @@
 package nyancat
 
 import (
+	"github.com/heia-fr/telecom-tower/color"
 	"github.com/heia-fr/telecom-tower/ws2811"
 )
 
@@ -23,43 +24,43 @@ const screenWidth = 128
 const screenHeight = 8
 const motifWidth = 32
 
-var background ws2811.Color
-var pink1 ws2811.Color
-var pink2 ws2811.Color
-var salmon ws2811.Color
-var catHead ws2811.Color
-var catPaw ws2811.Color
-var cheek ws2811.Color
-var black ws2811.Color
-var white ws2811.Color
+var background color.Color
+var pink1 color.Color
+var pink2 color.Color
+var salmon color.Color
+var catHead color.Color
+var catPaw color.Color
+var cheek color.Color
+var black color.Color
+var white color.Color
 
-var red ws2811.Color
-var orange ws2811.Color
-var yellow ws2811.Color
-var green ws2811.Color
-var blue1 ws2811.Color
-var blue2 ws2811.Color
+var red color.Color
+var orange color.Color
+var yellow color.Color
+var green color.Color
+var blue1 color.Color
+var blue2 color.Color
 
-var Bitmap [2][screenHeight * (2*screenWidth + motifWidth)]ws2811.Color
+var Bitmap [2][screenHeight * (2*screenWidth + motifWidth)]color.Color
 
 func Init(brightness int) {
 
-	background = ws2811.RGB(0, 26, 51)
-	pink1 = ws2811.RGB(253, 151, 253)
-	pink2 = ws2811.RGB(254, 48, 150)
-	salmon = ws2811.RGB(253, 202, 153)
-	catHead = ws2811.RGB(152, 152, 152)
-	catPaw = ws2811.RGB(162, 162, 162)
-	cheek = ws2811.RGB(253, 153, 153)
-	black = ws2811.RGB(0, 0, 0)
-	white = ws2811.RGB(255, 255, 255)
+	background = color.RGB(0, 51, 102)
+	pink1 = color.RGB(253, 151, 253)
+	pink2 = color.RGB(254, 48, 150)
+	salmon = color.RGB(253, 202, 153)
+	catHead = color.RGB(152, 152, 152)
+	catPaw = color.RGB(162, 162, 162)
+	cheek = color.RGB(253, 153, 153)
+	black = color.RGB(0, 0, 0)
+	white = color.RGB(255, 255, 255)
 
-	red = ws2811.RGB(253, 0, 0)
-	orange = ws2811.RGB(253, 153, 0)
-	yellow = ws2811.RGB(254, 254, 0)
-	green = ws2811.RGB(51, 253, 0)
-	blue1 = ws2811.RGB(0, 153, 253)
-	blue2 = ws2811.RGB(102, 253, 255)
+	red = color.RGB(253, 0, 0)
+	orange = color.RGB(253, 153, 0)
+	yellow = color.RGB(254, 254, 0)
+	green = color.RGB(51, 253, 0)
+	blue1 = color.RGB(0, 153, 253)
+	blue2 = color.RGB(102, 253, 255)
 
 	ws2811.Init(18, 1024, brightness)
 	// init background color everywhere
@@ -194,7 +195,7 @@ func Init(brightness int) {
 	}
 }
 
-func Set(frame int, col int, line int, color ws2811.Color) {
+func Set(frame int, col int, line int, color color.Color) {
 	if frame == 0 || frame == 2 {
 		if col%2 == 0 {
 			Bitmap[0][(col+128)*8+line] = color
@@ -212,16 +213,13 @@ func Set(frame int, col int, line int, color ws2811.Color) {
 }
 
 func Roll() {
-	for i :=  (screenWidth+motifWidth)/2; i > 0; i-- {
+	for i := 0; i < (2*screenWidth+motifWidth)/2; i++ {
 		ws2811.SetBitmap(Bitmap[0][i*16 : i*16+1024])
 		ws2811.Render()
 		ws2811.Wait()
 
-		ws2811.SetBitmap(Bitmap[1][i*16-8 : i*16-8+1024])
+		ws2811.SetBitmap(Bitmap[1][i*16+8 : i*16+8+1024])
 		ws2811.Render()
 		ws2811.Wait()
 	}
-	ws2811.SetBitmap(Bitmap[0][0 : 1024])
-	ws2811.Render()
-	ws2811.Wait()
 }
