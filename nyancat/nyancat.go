@@ -44,7 +44,7 @@ var Bitmap [2][screenHeight * (2*screenWidth + motifWidth)]ws2811.Color
 
 func Init(brightness int) {
 
-	background = ws2811.RGB(0, 51, 102)
+	background = ws2811.RGB(0, 26, 51)
 	pink1 = ws2811.RGB(253, 151, 253)
 	pink2 = ws2811.RGB(254, 48, 150)
 	salmon = ws2811.RGB(253, 202, 153)
@@ -212,13 +212,16 @@ func Set(frame int, col int, line int, color ws2811.Color) {
 }
 
 func Roll() {
-	for i := 0; i < (2*screenWidth+motifWidth)/2; i++ {
+	for i :=  (screenWidth+motifWidth)/2; i > 0; i-- {
 		ws2811.SetBitmap(Bitmap[0][i*16 : i*16+1024])
 		ws2811.Render()
 		ws2811.Wait()
 
-		ws2811.SetBitmap(Bitmap[1][i*16+8 : i*16+8+1024])
+		ws2811.SetBitmap(Bitmap[1][i*16-8 : i*16-8+1024])
 		ws2811.Render()
 		ws2811.Wait()
 	}
+	ws2811.SetBitmap(Bitmap[0][0 : 1024])
+	ws2811.Render()
+	ws2811.Wait()
 }
