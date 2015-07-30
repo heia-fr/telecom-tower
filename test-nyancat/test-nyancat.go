@@ -16,25 +16,15 @@
 package main
 
 import (
-	"github.com/heia-fr/telecom-tower/bitmapfont"
-	"github.com/heia-fr/telecom-tower/tower"
+	"github.com/heia-fr/telecom-tower/nyancat"
 	"github.com/heia-fr/telecom-tower/ws2811"
 )
 
 func main() {
-	tower.Init(128)
+	nyancat.Init(32)
 	defer ws2811.Fini()
 
-	tower.Write("Haute école d'ingénierie et d'architecture Fribourg", bitmapfont.F88, ws2811.RGB(150, 200, 255))
-	tower.Write(" \u2665 ", bitmapfont.F88, ws2811.RGB(255, 0, 0))
-	tower.Write("Informatique", bitmapfont.F68, ws2811.RGB(223, 0, 30))
-	tower.Write(" \u2665 ", bitmapfont.F88, ws2811.RGB(255, 0, 0))
-	tower.Write("Télécommunications", bitmapfont.F68, ws2811.RGB(248, 179, 30))
-	tower.Write(" \u2665 ", bitmapfont.F88, ws2811.RGB(255, 0, 0))
-
-	tower.Finish()
-
 	for true {
-		tower.Roll()
+		nyancat.Roll()
 	}
 }
