@@ -21,48 +21,11 @@ package ws2811
 /*
 #cgo CFLAGS: -std=c99
 #cgo LDFLAGS: -lws2811
-#include <stdint.h>
-#include <string.h>
-#include <ws2811.h>
-
-ws2811_t ledstring = {
-   .freq = 800000,
-   .dmanum = 5,
-   .channel = {
-	   [0] = {
-		   .gpionum = 18,
-		   .count = 256,
-		   .invert = 0,
-		   .brightness = 32,
-	   },
-	   [1] = {
-		   .gpionum = 0,
-		   .count = 0,
-		   .invert = 0,
-		   .brightness = 0,
-	   },
-   },
-};
-
-void ws2811_set_led(ws2811_t *ws2811, int index, uint32_t value) {
-	ws2811->channel[0].leds[index] = value;
-}
-
-void ws2811_clear(ws2811_t *ws2811) {
-	for (int chan = 0; chan < RPI_PWM_CHANNELS; chan++) {
-		ws2811_channel_t *channel = &ws2811->channel[chan];
-		memset(channel->leds, 0, sizeof(ws2811_led_t) * channel->count);
-	}
-}
-
-void ws2811_set_bitmap(ws2811_t *ws2811, void* a, int len) {
-	memcpy(ws2811->channel[0].leds, a, len);
-}
-
+#include "ws2811.go.h"
 */
 import "C"
 import "unsafe"
-import "github.com/heia-fr/telecom-tower/color"
+import "github.com/heia-fr/telecom-tower/ledmatrix"
 
 func Init(gpioPin int, ledCount int, brightness int) int {
 	C.ledstring.channel[0].gpionum = C.int(gpioPin)
@@ -86,7 +49,7 @@ func Wait() int {
 	return res
 }
 
-func SetLed(index int, value color.Color) {
+func SetLed(index int, value ledmatrix.Color) {
 	C.ws2811_set_led(&C.ledstring, C.int(index), C.uint32_t(value))
 }
 
@@ -94,6 +57,6 @@ func Clear() {
 	C.ws2811_clear(&C.ledstring)
 }
 
-func SetBitmap(a []color.Color) {
+func SetBitmap(a []ledmatrix.Color) {
 	C.ws2811_set_bitmap(&C.ledstring, unsafe.Pointer(&a[0]), C.int(len(a)*4))
 }
