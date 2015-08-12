@@ -18,7 +18,10 @@ package main
 import (
 	"github.com/heia-fr/telecom-tower/bitmapfont"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
-	"github.com/heia-fr/telecom-tower/sprite"
+	// "github.com/heia-fr/telecom-tower/sprite"
+	"encoding/json"
+	"flag"
+	"fmt"
 	"github.com/heia-fr/telecom-tower/tower"
 	"log"
 	"os"
@@ -26,6 +29,13 @@ import (
 )
 
 func main() {
+	var jsonFile string
+	var roll bool
+	flag.StringVar(&jsonFile, "message", "", "JSON File with data")
+	flag.BoolVar(&roll, "roll", true, "n/a")
+
+	flag.Parse()
+
 	log.Println("Booting tower...")
 	matrix := ledmatrix.NewMatrix()
 	writer := ledmatrix.NewWriter(matrix)
@@ -33,255 +43,40 @@ func main() {
 	tower.Init(128)
 
 	bg := ledmatrix.RGB(0, 0, 0)
-	tux := sprite.NewSpriteFromImage("tux.png")
+	// tux := sprite.NewSpriteFromImage("tux.png")
 
-	writer.WriteText(
-		"Haute école d'ingénierie et d'architecture Fribourg",
-		bitmapfont.F88,
-		ledmatrix.RGB(150, 200, 255),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
+	var data struct {
+		Message []struct {
+			Text  string
+			Font  int
+			Color string
+		}
+	}
 
-	writer.WriteText(
-		"Informatique",
-		bitmapfont.F68,
-		ledmatrix.RGB(223, 0, 30),
-		bg,
-	)
+	f, _ := os.Open(jsonFile)
+	dec := json.NewDecoder(f)
 
-	/*
-		writer.WriteText(
-			" \u2665 ",
-			bitmapfont.F88,
-			ledmatrix.RGB(255, 0, 0),
-			bg,
-		)
-	*/
+	if err := dec.Decode(&data); err != nil {
+		log.Println(err)
+		return
+	}
 
-	writer.Spacer(8, 0)
-	writer.WriteBitmap(tux.Bitmap)
-	writer.Spacer(8, 0)
+	for _, line := range data.Message {
+		var r, g, b int
+		var f bitmapfont.Font
 
-	writer.WriteText(
-		"Télécommunications",
-		bitmapfont.F68,
-		ledmatrix.RGB(248, 179, 30),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
+		if line.Font < 8 {
+			f = bitmapfont.F68
+		} else {
+			f = bitmapfont.F88
+		}
 
-	writer.WriteText(
-		"Génie électrique",
-		bitmapfont.F68,
-		ledmatrix.RGB(222, 180, 8),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
+		fmt.Sscanf(line.Color, "#%02x%02x%02x", &r, &g, &b)
 
-	writer.WriteText(
-		"Génie mécanique",
-		bitmapfont.F68,
-		ledmatrix.RGB(100, 60, 4),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
+		writer.WriteText(line.Text, f, ledmatrix.RGB(r, g, b), bg)
+	}
 
-	writer.WriteText(
-		"Chimie",
-		bitmapfont.F68,
-		ledmatrix.RGB(0, 200, 30),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Architecture",
-		bitmapfont.F68,
-		ledmatrix.RGB(110, 40, 140),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Génie civil",
-		bitmapfont.F68,
-		ledmatrix.RGB(90, 90, 180),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Ecole technique de la construction",
-		bitmapfont.F68,
-		ledmatrix.RGB(90, 90, 90),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Hochschule für Technik und Architektur Freiburg",
-		bitmapfont.F88,
-		ledmatrix.RGB(150, 200, 255),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Informatik",
-		bitmapfont.F68,
-		ledmatrix.RGB(223, 0, 30),
-		bg,
-	)
-	/*
-		writer.WriteText(
-			" \u2665 ",
-			bitmapfont.F88,
-			ledmatrix.RGB(255, 0, 0),
-			bg,
-		)
-	*/
-
-	writer.Spacer(8, 0)
-	writer.WriteBitmap(tux.Bitmap)
-	writer.Spacer(8, 0)
-
-	writer.WriteText(
-		"Telekommunikation",
-		bitmapfont.F68,
-		ledmatrix.RGB(248, 179, 30),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Elektrotechnik",
-		bitmapfont.F68,
-		ledmatrix.RGB(222, 180, 8),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Maschinentechnik",
-		bitmapfont.F68,
-		ledmatrix.RGB(100, 60, 4),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Chemie",
-		bitmapfont.F68,
-		ledmatrix.RGB(0, 200, 30),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Architektur",
-		bitmapfont.F68,
-		ledmatrix.RGB(110, 40, 140),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Bauingenieurwesen",
-		bitmapfont.F68,
-		ledmatrix.RGB(90, 90, 180),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
-	writer.WriteText(
-		"Bautechnische Schule",
-		bitmapfont.F68,
-		ledmatrix.RGB(90, 90, 90),
-		bg,
-	)
-	writer.WriteText(
-		" \u2665 ",
-		bitmapfont.F88,
-		ledmatrix.RGB(255, 0, 0),
-		bg,
-	)
-
+	log.Printf("Columns: %v\n", matrix.Columns())
 	log.Println("Roll!")
 
 	c := make(chan os.Signal, 1)
@@ -295,15 +90,20 @@ func main() {
 		signalChannel <- s
 	}()
 
-	for true {
-		tower.Roll(writer)
-		select {
-		case _ = <-signalChannel:
-			log.Println("Shutting down tower now")
-			tower.Shutdown()
-			os.Exit(0)
-		default:
-			// continue
+	if roll {
+		for true {
+			tower.Roll(writer)
+			select {
+			case _ = <-signalChannel:
+				log.Println("Shutting down tower now")
+				tower.Shutdown()
+				os.Exit(0)
+			default:
+				// continue
+			}
 		}
+	} else {
+		tower.Roll(writer)
+		tower.Shutdown()
 	}
 }

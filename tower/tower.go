@@ -12,20 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package to display text on the Telecom Tower
+// Package to display info on the Telecom Tower
 package tower
 
 import (
-	"github.com/heia-fr/telecom-tower/bitmapfont"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"github.com/heia-fr/telecom-tower/ws2811"
 )
 
-var W *ledmatrix.Writer
+const (
+	queueSize = 8
+	gpioPin   = 18
+)
+
+var Queue chan []ledmatrix.Color
+var initialized = false
 
 func Init(brightness int) {
-
-	ws2811.Init(18, ledmatrix.Rows*ledmatrix.Columns, brightness)
+	if initialized {
+		panic("Tower already initialized!")
+	}
+	initialized = true
+	ws2811.Init(gpioPin, ledmatrix.Rows*ledmatrix.Columns, brightness)
+	Queue = make(chan []ledmatrix.Color, queueSize)
+	go func() { // Phantom of the Tower
+		for {
+			req := <-Queue
+			ws2811.SetBitmap(req)
+			ws2811.Render()
+			ws2811.Wait()
+		}
+	}()
 }
 
 func Shutdown() {
@@ -36,15 +53,9 @@ func Shutdown() {
 	// ws2811.Fini()
 }
 
-func WriteText(text string, font bitmapfont.Font, color, bgColor ledmatrix.Color) {
-	W.WriteText(text, font, color, bgColor)
-}
-
 func Roll(w *ledmatrix.Writer) {
 	w.ExtendCircular()
 	for i := 0; i < w.Pos(); i++ {
-		ws2811.SetBitmap(w.Matrix.SliceAt(i))
-		ws2811.Render()
-		ws2811.Wait()
+		Queue <- w.Matrix.SliceAt(i)
 	}
 }
