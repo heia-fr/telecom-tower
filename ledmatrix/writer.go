@@ -79,10 +79,10 @@ func (w *Writer) Spacer(width int, color Color) {
 	w.pos += width
 }
 
-func (w *Writer) ExtendCircular() {
+func (w *Writer) ExtendCircular(from int) {
 	for i := 0; i < Columns; i++ {
 		for j := 0; j < Rows; j++ {
-			w.Matrix.SetPixel(w.pos+i, j, w.Matrix.GetPixel(i, j))
+			w.Matrix.SetPixel(w.pos+i, j, w.Matrix.GetPixel(from + i, j))
 		}
 	}
 }

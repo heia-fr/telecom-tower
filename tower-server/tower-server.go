@@ -23,8 +23,8 @@ import (
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"github.com/heia-fr/telecom-tower/tower"
 	"log"
+	"time"
 	"os"
-	"os/signal"
 )
 
 type Line struct {
@@ -42,6 +42,8 @@ var writerQueue chan *ledmatrix.Writer
 func compose(data Message, bg ledmatrix.Color) *ledmatrix.Writer {
 	matrix := ledmatrix.NewMatrix()
 	writer := ledmatrix.NewWriter(matrix)
+	writer.Spacer(ledmatrix.Columns, 0) // Blank bootstrap
+
 	for _, line := range data {
 		var r, g, b int
 		var f bitmapfont.Font
@@ -68,6 +70,7 @@ func displayBuilder() {
 
 func towerServer() {
 	data := make(Message, 1)
+	start := 0
 	data[0] = Line{Text: "Booting tower... please wait. ", Font: 6, Color: "#3333FF"}
 	currentDisplay := compose(data, ledmatrix.RGB(0, 0, 0))
 
@@ -75,6 +78,7 @@ func towerServer() {
 		select {
 		case m := <-writerQueue:
 			currentDisplay = m
+			start = 0
 		case _ = <-signalChannel:
 			log.Println("Shutting down tower now")
 			tower.Shutdown()
@@ -82,7 +86,8 @@ func towerServer() {
 		default:
 			// continue
 		}
-		tower.Roll(currentDisplay)
+		tower.Roll(currentDisplay, start)
+		start = ledmatrix.Columns
 	}
 }
 
@@ -117,14 +122,8 @@ func main() {
 	// log.Printf("Columns: %v\n", matrix.Columns())
 	log.Println("Roll!")
 
-	c := make(chan os.Signal, 1)
-	signalChannel = make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
-
-	//go func() {
-	s := <-c
-	log.Println("Shutting down tower... please wait for message finish")
-	signalChannel <- s
-	//}()
+	for {
+		time.Sleep(100 * time.Millisecond)
+	}
 
 }

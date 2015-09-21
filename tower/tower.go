@@ -50,12 +50,12 @@ func Shutdown() {
 	ws2811.Clear()
 	ws2811.Render()
 	ws2811.Wait()
-	// ws2811.Fini()
+	ws2811.Fini()
 }
 
-func Roll(w *ledmatrix.Writer) {
-	w.ExtendCircular()
-	for i := 0; i < w.Pos(); i++ {
+func Roll(w *ledmatrix.Writer, start int) {
+	w.ExtendCircular(ledmatrix.Columns)
+	for i := start; i < w.Pos(); i++ {
 		Queue <- w.Matrix.SliceAt(i)
 	}
 }
