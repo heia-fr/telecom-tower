@@ -89,9 +89,7 @@ func (m *Matrix) Columns() int {
 }
 
 func (m *Matrix) SliceAt(column int) []Color {
-	if column%2 == 0 {
-		return m.Bitmap[0][column*Rows:]
-	} else {
-		return m.Bitmap[1][column*Rows:]
-	}
+	index := column % 2
+	return m.Bitmap[index][column*Rows:column*Rows+Rows*Columns]
+
 }
