@@ -97,7 +97,7 @@ func main() {
 	flag.Parse()
 
 	log.Println("Booting tower...")
-	tower.Init(128)
+	tower.Init(32)
 
 	msgQueue = make(chan Message, 32)
 	writerQueue = make(chan *ledmatrix.Writer, 32)
