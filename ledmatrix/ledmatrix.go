@@ -14,19 +14,20 @@
 
 package ledmatrix
 
-const Rows = 8
-const Columns = 128
-
 type Color uint32
 
 type Matrix struct {
-	Bitmap [2][]Color
+	Rows    int
+	Columns int
+	Bitmap  [2][]Color
 }
 
-func NewMatrix() *Matrix {
+func NewMatrix(rows, columns int) *Matrix {
 	m := new(Matrix)
+	m.Rows = rows
+	m.Columns = columns
 	for i := 0; i < len(m.Bitmap); i++ {
-		m.Bitmap[i] = make([]Color, Rows*Columns)
+		m.Bitmap[i] = make([]Color, m.Rows*m.Columns)
 	}
 	return m
 }
@@ -45,10 +46,10 @@ func RGB(r, g, b int) Color {
 }
 
 func (m *Matrix) checkXY(x, y int) {
-	if y < 0 || y >= Rows {
+	if y < 0 || y >= m.Rows {
 		panic("y out of bound")
 	}
-	requiredSize := (x + 1) * Rows
+	requiredSize := (x + 1) * m.Rows
 	if len(m.Bitmap[0]) < requiredSize {
 		if cap(m.Bitmap[0]) < requiredSize {
 			for i := 0; i < len(m.Bitmap); i++ {
@@ -67,29 +68,24 @@ func (m *Matrix) checkXY(x, y int) {
 func (m *Matrix) SetPixel(x, y int, color Color) {
 	m.checkXY(x, y)
 	if x%2 == 0 {
-		m.Bitmap[0][x*Rows+y] = color
-		m.Bitmap[1][x*Rows+(Rows-1-y)] = color
+		m.Bitmap[0][x*m.Rows+y] = color
+		m.Bitmap[1][x*m.Rows+(m.Rows-1-y)] = color
 	} else {
-		m.Bitmap[0][x*Rows+(Rows-1-y)] = color
-		m.Bitmap[1][x*Rows+y] = color
+		m.Bitmap[0][x*m.Rows+(m.Rows-1-y)] = color
+		m.Bitmap[1][x*m.Rows+y] = color
 	}
 }
 
 func (m *Matrix) GetPixel(x, y int) Color {
 	m.checkXY(x, y)
 	if x%2 == 0 {
-		return m.Bitmap[0][x*Rows+y]
+		return m.Bitmap[0][x*m.Rows+y]
 	} else {
-		return m.Bitmap[0][x*Rows+(Rows-1-y)]
+		return m.Bitmap[0][x*m.Rows+(m.Rows-1-y)]
 	}
-}
-
-func (m *Matrix) Columns() int {
-	return len(m.Bitmap[0]) / Rows
 }
 
 func (m *Matrix) SliceAt(column int) []Color {
 	index := column % 2
-	return m.Bitmap[index][column*Rows:column*Rows+Rows*Columns]
-
+	return m.Bitmap[index][column*m.Rows : column*m.Rows+m.Rows*m.Columns]
 }

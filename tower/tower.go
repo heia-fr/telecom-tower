@@ -23,6 +23,8 @@ import (
 const (
 	queueSize = 8
 	gpioPin   = 18
+	Columns   = 128
+	Rows      = 8
 )
 
 var Queue chan []ledmatrix.Color
@@ -33,7 +35,7 @@ func Init(brightness int) {
 		panic("Tower already initialized!")
 	}
 	initialized = true
-	ws2811.Init(gpioPin, ledmatrix.Rows*ledmatrix.Columns, brightness)
+	ws2811.Init(gpioPin, Rows*Columns, brightness)
 	Queue = make(chan []ledmatrix.Color, queueSize)
 	go func() { // Phantom of the Tower
 		for {
@@ -54,7 +56,7 @@ func Shutdown() {
 }
 
 func Roll(w *ledmatrix.Writer, start int) {
-	w.ExtendCircular(ledmatrix.Columns)
+	w.ExtendCircular(w.Matrix.Columns)
 	for i := start; i < w.Pos(); i++ {
 		Queue <- w.Matrix.SliceAt(i)
 	}

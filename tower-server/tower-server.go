@@ -23,8 +23,8 @@ import (
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"github.com/heia-fr/telecom-tower/tower"
 	"log"
-	"time"
 	"os"
+	"time"
 )
 
 type Line struct {
@@ -40,9 +40,9 @@ var msgQueue chan Message
 var writerQueue chan *ledmatrix.Writer
 
 func compose(data Message, bg ledmatrix.Color) *ledmatrix.Writer {
-	matrix := ledmatrix.NewMatrix()
+	matrix := ledmatrix.NewMatrix(tower.Rows, tower.Columns)
 	writer := ledmatrix.NewWriter(matrix)
-	writer.Spacer(ledmatrix.Columns, 0) // Blank bootstrap
+	writer.Spacer(matrix.Columns, 0) // Blank bootstrap
 
 	for _, line := range data {
 		var r, g, b int
@@ -87,7 +87,7 @@ func towerServer() {
 			// continue
 		}
 		tower.Roll(currentDisplay, start)
-		start = ledmatrix.Columns
+		start = tower.Columns
 	}
 }
 

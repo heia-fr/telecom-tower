@@ -45,11 +45,11 @@ func (w *Writer) WriteText(text string, font bitmapfont.Font, color, bgColor Col
 	for i := 0; i < len(t); i++ {
 		a := font.GetCharMSB(t[i])
 		for j := 0; j < font.Width; j++ {
-			for k := 0; k < Rows; k++ {
+			for k := 0; k < w.Matrix.Rows; k++ {
 				if a[j]&(1<<uint(k)) != 0 {
-					w.Matrix.SetPixel(w.pos+j, Rows-1-k, color)
+					w.Matrix.SetPixel(w.pos+j, w.Matrix.Rows-1-k, color)
 				} else {
-					w.Matrix.SetPixel(w.pos+j, Rows-1-k, bgColor)
+					w.Matrix.SetPixel(w.pos+j, w.Matrix.Rows-1-k, bgColor)
 				}
 			}
 		}
@@ -71,7 +71,7 @@ func (w *Writer) WriteBitmap(bitmap [][]Color) {
 }
 
 func (w *Writer) Spacer(width int, color Color) {
-	for y := 0; y < Rows; y++ {
+	for y := 0; y < w.Matrix.Rows; y++ {
 		for x := 0; x < width; x++ {
 			w.Matrix.SetPixel(w.pos+x, y, color)
 		}
@@ -80,16 +80,16 @@ func (w *Writer) Spacer(width int, color Color) {
 }
 
 func (w *Writer) ExtendCircular(from int) {
-	for i := 0; i < Columns; i++ {
-		for j := 0; j < Rows; j++ {
-			w.Matrix.SetPixel(w.pos+i, j, w.Matrix.GetPixel(from + i, j))
+	for i := 0; i < w.Matrix.Columns; i++ {
+		for j := 0; j < w.Matrix.Rows; j++ {
+			w.Matrix.SetPixel(w.pos+i, j, w.Matrix.GetPixel(from+i, j))
 		}
 	}
 }
 
 func (w *Writer) ExtendClear(bgColor Color) {
-	for i := 0; i < Columns; i++ {
-		for j := 0; j < Rows; j++ {
+	for i := 0; i < w.Matrix.Columns; i++ {
+		for j := 0; j < w.Matrix.Rows; j++ {
 			w.Matrix.SetPixel(w.pos+i, j, bgColor)
 		}
 	}
