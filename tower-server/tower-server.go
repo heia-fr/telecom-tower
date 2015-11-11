@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Test programm for Telecom Tower
+// Telecom Tower REST server
 package main
 
 import (
@@ -23,9 +23,15 @@ import (
 	"github.com/heia-fr/telecom-tower/bitmapfont"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"github.com/heia-fr/telecom-tower/tower"
-	"html"
 	"log"
 	"net/http"
+)
+
+const (
+	TEXT_MSG_QUEUE_SIZE   = 32
+	BITMAP_MSG_QUEUE_SIZE = 32
+	DEFAULT_PORT          = 8080
+	DEFAULT_BRIGHTNESS    = 32
 )
 
 type Line struct {
@@ -35,10 +41,10 @@ type Line struct {
 }
 
 type TextMessage struct {
-	Body     []Line `json:"body"`
-	EntrySep Line   `json:"entry-sep"`
-	ExitSep  Line   `json:"exit-sep"`
-	LoopSep  Line   `json:"loop-sep"`
+	Body         []Line `json:"body"`
+	Introduction []Line `json:"introduction"`
+	Conclusion   []Line `json:"conclusion"`
+	Separator    []Line `json:"separator"`
 }
 
 type BitmapMessage struct {
@@ -76,45 +82,65 @@ func renderedTextMessage(message []Line, bg ledmatrix.Color) *ledmatrix.Matrix {
 	return writer.Matrix
 }
 
+// blank generates a "space" from the given color
 func blank(len int, bg ledmatrix.Color) *ledmatrix.Matrix {
 	writer := ledmatrix.NewWriter(ledmatrix.NewMatrix(tower.Rows, tower.Columns))
 	writer.Spacer(tower.Columns, bg) // Blank spacer
 	return writer.Matrix
 }
 
+// displayBuilder is a goroutine that converts text messages to bitmaps. The data
+// usually comes from a REST request and the bitmap is then sent to the
+// towerServer
 func displayBuilder() {
 	bg := ledmatrix.RGB(0, 0, 0)
 	preamble := blank(tower.Columns, bg)
 
-	for {
+	for { // Loop forever
+		// Receive a text message
 		message := <-textMsgQueue
+		// render all parts of the message
 		body := renderedTextMessage(message.Body, bg)
-		entrySep := renderedTextMessage([]Line{message.EntrySep}, bg)
-		exitSep := renderedTextMessage([]Line{message.ExitSep}, bg)
-		loopSep := renderedTextMessage([]Line{message.LoopSep}, bg)
+		introduction := renderedTextMessage(message.Introduction, bg)
+		conclusion := renderedTextMessage(message.Conclusion, bg)
+		separator := renderedTextMessage(message.Separator, bg)
 
 		if body.Columns == 0 {
 			log.Println("Skip empty message")
 			continue
 		}
 
+		// we need at least a full display. So if the message is too short,
+		// then append tbe separator and aother copy of the message.
+		// We re-render the message and this is not optimal, but this
+		// is only usd for shirt messages, so this is OK.
 		for body.Columns < tower.Columns {
-			body.Append(loopSep, renderedTextMessage(message.Body, bg))
+			body.Append(separator, renderedTextMessage(message.Body, bg))
 		}
 
-		preamble.Append(entrySep)
+		// Append the introduction to the preamble
+		preamble.Append(introduction)
 
-		wrapper := ledmatrix.Concat(loopSep, body.Slice(0, tower.Columns))
+		// Compute the wrapper. The wrapper makes the link between the end and
+		// the start of the message, allowing it to "roll" properly.
+		wrapper := ledmatrix.Concat(separator, body.Slice(0, tower.Columns))
 
+		// Send the bitmap message
 		bitmapMsgQueue <- BitmapMessage{
 			matrix:     ledmatrix.Concat(preamble, body, wrapper),
 			preamble:   preamble.Columns,
 			checkpoint: preamble.Columns + body.Columns - tower.Columns,
 		}
-		preamble = ledmatrix.Concat(body.Slice(body.Columns-tower.Columns, body.Columns), exitSep)
+
+		// Compute the next preamble using the last frame of the body and the conclusion
+		preamble = ledmatrix.Concat(body.Slice(body.Columns-tower.Columns, body.Columns), conclusion)
 	}
 }
 
+// towerServer is a the goroutine that receives bitmap messages from the displayBuilder
+// and dispatch "frames" to the tower LEDs. The preamble is only sent once; at the
+// checkpoint, the goroutine checks if a new message is available; if yes, it switches
+// to this new message; if no, it finish the message and roll th same message again.
 func towerServer() {
 	currentMessage := BitmapMessage{
 		matrix:     blank(tower.Columns, 0),
@@ -123,7 +149,7 @@ func towerServer() {
 	}
 
 	start := 0
-	for {
+	for { // Loop forever
 		// Roll until checkpoint!
 		for i := start; i < currentMessage.checkpoint; i++ {
 			tower.DisplayQueue <- currentMessage.matrix.BitmapSliceAt(i, tower.Columns)
@@ -134,7 +160,6 @@ func towerServer() {
 			log.Println("New Message...")
 			currentMessage = m
 			start = 0
-
 		default:
 			// continue
 			for i := currentMessage.checkpoint; i < currentMessage.matrix.Columns-tower.Columns; i++ {
@@ -143,43 +168,44 @@ func towerServer() {
 			// skip preamble for the next run
 			start = currentMessage.preamble
 		}
-
 	}
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-}
-
+// PostMessage is the main entry point of the REST server. JSON messages
+// posted here are sent to the displayBuilder goroutine through the textMsgQueue.
 func PostMessage(w http.ResponseWriter, r *http.Request) {
 	var message TextMessage
 	dec := json.NewDecoder(r.Body)
 
+	// decode the JSON message
 	if err := dec.Decode(&message); err != nil {
 		fmt.Fprintf(w, "err\n")
 	} else {
 		textMsgQueue <- message
 		fmt.Fprintf(w, "OK\n")
 	}
-
 }
 
+// tower-server starts a REST server and starts the towerServer goroutine and
+// displayBuilder goroutine. The rest of the job is done in the PostMessage
+// method.
 func main() {
-	var jsonFile string
-	flag.StringVar(&jsonFile, "message", "", "JSON File with data")
+	var port = flag.Int("port", DEFAULT_PORT, "port")
+	var brightness = flag.Int(
+		"brightness", DEFAULT_BRIGHTNESS,
+		"Brightness between 0 and 255.")
+
 	flag.Parse()
 
-	log.Println("Booting tower...")
-	tower.Init(32)
-
-	textMsgQueue = make(chan TextMessage, 32)
-	bitmapMsgQueue = make(chan BitmapMessage, 32)
+	tower.Init(*brightness)
+	textMsgQueue = make(chan TextMessage, TEXT_MSG_QUEUE_SIZE)
+	bitmapMsgQueue = make(chan BitmapMessage, BITMAP_MSG_QUEUE_SIZE)
 
 	go towerServer()
 	go displayBuilder()
+	log.Println("Tower ready.")
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/", Index)
 	router.Methods("POST").Path("/message").HandlerFunc(PostMessage)
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }
