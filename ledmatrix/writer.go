@@ -79,18 +79,18 @@ func (w *Writer) Spacer(width int, color Color) {
 	w.pos += width
 }
 
-func (w *Writer) ExtendCircular(from int) {
-	for i := 0; i < w.Matrix.Columns; i++ {
-		for j := 0; j < w.Matrix.Rows; j++ {
-			w.Matrix.SetPixel(w.pos+i, j, w.Matrix.GetPixel(from+i, j))
-		}
-	}
-}
+// func (w *Writer) ExtendCircular(from int) {
+// 	for i := 0; i < w.Matrix.Columns; i++ {
+// 		for j := 0; j < w.Matrix.Rows; j++ {
+// 			w.Matrix.SetPixel(w.pos+i, j, w.Matrix.GetPixel(from+i, j))
+// 		}
+// 	}
+// }
 
-func (w *Writer) ExtendClear(bgColor Color) {
-	for i := 0; i < w.Matrix.Columns; i++ {
-		for j := 0; j < w.Matrix.Rows; j++ {
-			w.Matrix.SetPixel(w.pos+i, j, bgColor)
-		}
-	}
-}
+// func (w *Writer) ExtendClear(bgColor Color) {
+// 	for i := 0; i < w.Matrix.Columns; i++ {
+// 		for j := 0; j < w.Matrix.Rows; j++ {
+// 			w.Matrix.SetPixel(w.pos+i, j, bgColor)
+// 		}
+// 	}
+// }

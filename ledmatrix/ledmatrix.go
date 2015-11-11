@@ -14,7 +14,9 @@
 
 package ledmatrix
 
-type Color uint32
+import (
+	"fmt"
+)
 
 type Matrix struct {
 	Rows    int
@@ -32,25 +34,25 @@ func NewMatrix(rows, columns int) *Matrix {
 	return m
 }
 
-func RGB(r, g, b int) Color {
-	if r < 0 || r > 255 {
-		panic("Red component must be between 0 and 255")
+// Check if the bitmaps sizes are consistent with the dimension of the matrix
+func (m *Matrix) check() {
+	size := m.Rows * m.Columns
+	for i := 0; i < len(m.Bitmap); i++ {
+		if len(m.Bitmap[i]) != size {
+			panic(fmt.Sprintf("Bad bitmap %d. Size shoud be %d and is %d", i, size, len(m.Bitmap[i])))
+		}
 	}
-	if g < 0 || g > 255 {
-		panic("Green component must be between 0 and 255")
-	}
-	if b < 0 || b > 255 {
-		panic("Blue component must be between 0 and 255")
-	}
-	return Color(r)<<16 + Color(g)<<8 + Color(b)
 }
 
+// Check if the coordinate (x,y) is valid in the Matrix. Extend the
+// Matrix if there is not enough space for x
 func (m *Matrix) checkXY(x, y int) {
 	if y < 0 || y >= m.Rows {
 		panic("y out of bound")
 	}
-	requiredSize := (x + 1) * m.Rows
-	if len(m.Bitmap[0]) < requiredSize {
+
+	if x >= m.Columns {
+		requiredSize := (x + 1) * m.Rows
 		if cap(m.Bitmap[0]) < requiredSize {
 			for i := 0; i < len(m.Bitmap); i++ {
 				t := make([]Color, requiredSize)
@@ -62,6 +64,7 @@ func (m *Matrix) checkXY(x, y int) {
 				m.Bitmap[i] = m.Bitmap[i][:requiredSize]
 			}
 		}
+		m.Columns = x + 1
 	}
 }
 
@@ -74,6 +77,7 @@ func (m *Matrix) SetPixel(x, y int, color Color) {
 		m.Bitmap[0][x*m.Rows+(m.Rows-1-y)] = color
 		m.Bitmap[1][x*m.Rows+y] = color
 	}
+	m.check()
 }
 
 func (m *Matrix) GetPixel(x, y int) Color {
@@ -85,7 +89,56 @@ func (m *Matrix) GetPixel(x, y int) Color {
 	}
 }
 
-func (m *Matrix) SliceAt(column int) []Color {
+func (m *Matrix) BitmapSliceAt(column, size int) []Color {
 	index := column % 2
-	return m.Bitmap[index][column*m.Rows : column*m.Rows+m.Rows*m.Columns]
+	return m.Bitmap[index][column*m.Rows : (column+size)*m.Rows]
+}
+
+func (m *Matrix) Slice(low, high int) *Matrix {
+	res := new(Matrix)
+	if low%2 == 0 {
+		res.Bitmap = [2][]Color{
+			m.Bitmap[0][low*m.Rows : high*m.Rows],
+			m.Bitmap[1][low*m.Rows : high*m.Rows]}
+	} else {
+		res.Bitmap = [2][]Color{
+			m.Bitmap[1][low*m.Rows : high*m.Rows],
+			m.Bitmap[0][low*m.Rows : high*m.Rows]}
+	}
+
+	res.Rows = m.Rows
+	res.Columns = high - low
+	res.check()
+	return res
+}
+
+func (m *Matrix) Append(x ...*Matrix) {
+	for _, i := range x {
+		if m.Rows != i.Rows {
+			panic("Error Matrix Operation")
+		}
+		if m.Columns%2 == 0 {
+			m.Bitmap = [2][]Color{
+				append(m.Bitmap[0], i.Bitmap[0]...),
+				append(m.Bitmap[1], i.Bitmap[1]...)}
+		} else {
+			m.Bitmap = [2][]Color{
+				append(m.Bitmap[0], i.Bitmap[1]...),
+				append(m.Bitmap[1], i.Bitmap[0]...)}
+		}
+		m.Columns += i.Columns
+	}
+	m.check()
+}
+
+func Concat(a *Matrix, b ...*Matrix) *Matrix {
+	res := new(Matrix)
+	res.Columns = a.Columns
+	res.Rows = a.Rows
+	res.Bitmap = [2][]Color{
+		append(res.Bitmap[0], a.Bitmap[0]...),
+		append(res.Bitmap[1], a.Bitmap[1]...)}
+
+	res.Append(b...)
+	return res
 }

@@ -19,12 +19,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/heia-fr/telecom-tower/bitmapfont"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"github.com/heia-fr/telecom-tower/tower"
+	"html"
 	"log"
-	"os"
-	"time"
+	"net/http"
 )
 
 type Line struct {
@@ -33,18 +34,33 @@ type Line struct {
 	Color string
 }
 
-type Message []Line
+type TextMessage struct {
+	Body     []Line `json:"body"`
+	EntrySep Line   `json:"entry-sep"`
+	ExitSep  Line   `json:"exit-sep"`
+	LoopSep  Line   `json:"loop-sep"`
+}
 
-var signalChannel chan os.Signal
-var msgQueue chan Message
-var writerQueue chan *ledmatrix.Writer
+type BitmapMessage struct {
+	matrix     *ledmatrix.Matrix
+	preamble   int
+	checkpoint int
+}
 
-func compose(data Message, bg ledmatrix.Color) *ledmatrix.Writer {
-	matrix := ledmatrix.NewMatrix(tower.Rows, tower.Columns)
+// textMsgQueue is the input queue for the displayBuilder goroutine.
+var textMsgQueue chan TextMessage
+
+// bitmapMsgQueue is the input queue for the towerServer goroutine.
+var bitmapMsgQueue chan BitmapMessage
+
+// renderdeTextMessage convert a text message to a LED bitmap matrix.
+// This method is used by the displayBuilder gorouting.
+func renderedTextMessage(message []Line, bg ledmatrix.Color) *ledmatrix.Matrix {
+	matrix := ledmatrix.NewMatrix(tower.Rows, 0)
 	writer := ledmatrix.NewWriter(matrix)
 	writer.Spacer(matrix.Columns, 0) // Blank bootstrap
 
-	for _, line := range data {
+	for _, line := range message {
 		var r, g, b int
 		var f bitmapfont.Font
 
@@ -57,38 +73,95 @@ func compose(data Message, bg ledmatrix.Color) *ledmatrix.Writer {
 		fmt.Sscanf(line.Color, "#%02x%02x%02x", &r, &g, &b)
 		writer.WriteText(line.Text, f, ledmatrix.RGB(r, g, b), bg)
 	}
-	return writer
+	return writer.Matrix
+}
+
+func blank(len int, bg ledmatrix.Color) *ledmatrix.Matrix {
+	writer := ledmatrix.NewWriter(ledmatrix.NewMatrix(tower.Rows, tower.Columns))
+	writer.Spacer(tower.Columns, bg) // Blank spacer
+	return writer.Matrix
 }
 
 func displayBuilder() {
 	bg := ledmatrix.RGB(0, 0, 0)
+	preamble := blank(tower.Columns, bg)
+
 	for {
-		message := <-msgQueue
-		writerQueue <- compose(message, bg)
+		message := <-textMsgQueue
+		body := renderedTextMessage(message.Body, bg)
+		entrySep := renderedTextMessage([]Line{message.EntrySep}, bg)
+		exitSep := renderedTextMessage([]Line{message.ExitSep}, bg)
+		loopSep := renderedTextMessage([]Line{message.LoopSep}, bg)
+
+		if body.Columns == 0 {
+			log.Println("Skip empty message")
+			continue
+		}
+
+		for body.Columns < tower.Columns {
+			body.Append(loopSep, renderedTextMessage(message.Body, bg))
+		}
+
+		preamble.Append(entrySep)
+
+		wrapper := ledmatrix.Concat(loopSep, body.Slice(0, tower.Columns))
+
+		bitmapMsgQueue <- BitmapMessage{
+			matrix:     ledmatrix.Concat(preamble, body, wrapper),
+			preamble:   preamble.Columns,
+			checkpoint: preamble.Columns + body.Columns - tower.Columns,
+		}
+		preamble = ledmatrix.Concat(body.Slice(body.Columns-tower.Columns, body.Columns), exitSep)
 	}
 }
 
 func towerServer() {
-	data := make(Message, 1)
-	start := 0
-	data[0] = Line{Text: "Booting tower... please wait. ", Font: 6, Color: "#3333FF"}
-	currentDisplay := compose(data, ledmatrix.RGB(0, 0, 0))
+	currentMessage := BitmapMessage{
+		matrix:     blank(tower.Columns, 0),
+		preamble:   0,
+		checkpoint: 0,
+	}
 
+	start := 0
 	for {
+		// Roll until checkpoint!
+		for i := start; i < currentMessage.checkpoint; i++ {
+			tower.DisplayQueue <- currentMessage.matrix.BitmapSliceAt(i, tower.Columns)
+		}
+		// Checkpoint
 		select {
-		case m := <-writerQueue:
-			currentDisplay = m
+		case m := <-bitmapMsgQueue:
+			log.Println("New Message...")
+			currentMessage = m
 			start = 0
-		case _ = <-signalChannel:
-			log.Println("Shutting down tower now")
-			tower.Shutdown()
-			os.Exit(0)
+
 		default:
 			// continue
+			for i := currentMessage.checkpoint; i < currentMessage.matrix.Columns-tower.Columns; i++ {
+				tower.DisplayQueue <- currentMessage.matrix.BitmapSliceAt(i, tower.Columns)
+			}
+			// skip preamble for the next run
+			start = currentMessage.preamble
 		}
-		tower.Roll(currentDisplay, start)
-		start = tower.Columns
+
 	}
+}
+
+func Index(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+}
+
+func PostMessage(w http.ResponseWriter, r *http.Request) {
+	var message TextMessage
+	dec := json.NewDecoder(r.Body)
+
+	if err := dec.Decode(&message); err != nil {
+		fmt.Fprintf(w, "err\n")
+	} else {
+		textMsgQueue <- message
+		fmt.Fprintf(w, "OK\n")
+	}
+
 }
 
 func main() {
@@ -99,31 +172,14 @@ func main() {
 	log.Println("Booting tower...")
 	tower.Init(32)
 
-	msgQueue = make(chan Message, 32)
-	writerQueue = make(chan *ledmatrix.Writer, 32)
+	textMsgQueue = make(chan TextMessage, 32)
+	bitmapMsgQueue = make(chan BitmapMessage, 32)
 
 	go towerServer()
 	go displayBuilder()
 
-	// Read json file
-	var data struct {
-		Message Message
-	}
-
-	f, _ := os.Open(jsonFile)
-	dec := json.NewDecoder(f)
-
-	if err := dec.Decode(&data); err != nil {
-		log.Println(err)
-		return
-	}
-
-	msgQueue <- data.Message
-	// log.Printf("Columns: %v\n", matrix.Columns())
-	log.Println("Roll!")
-
-	for {
-		time.Sleep(100 * time.Millisecond)
-	}
-
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/", Index)
+	router.Methods("POST").Path("/message").HandlerFunc(PostMessage)
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
