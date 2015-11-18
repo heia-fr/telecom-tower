@@ -99,6 +99,15 @@ func displayBuilder() {
 	for { // Loop forever
 		// Receive a text message
 		message := <-textMsgQueue
+
+		// If body is nil, then reset preamble. This is used when static frames
+		// are sent to the tower and the next rolling message should start
+		// with a blank.
+		if message.Body == nil {
+			preamble := blank(tower.Columns, bg)
+			continue
+		}
+
 		// render all parts of the message
 		body := renderedTextMessage(message.Body, bg)
 		introduction := renderedTextMessage(message.Introduction, bg)
@@ -186,6 +195,10 @@ func PostMessage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ToastMessage(w http.ResponseWriter, r *http.Request) {
+	router.Methods("POST").Path("/message").HandlerFunc(PostMessage)
+
+
 // tower-server starts a REST server and starts the towerServer goroutine and
 // displayBuilder goroutine. The rest of the job is done in the PostMessage
 // method.
@@ -207,5 +220,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Methods("POST").Path("/message").HandlerFunc(PostMessage)
+	router.Methods("POST").Path("/toast").HandlerFunc(ToastMessage)
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }
