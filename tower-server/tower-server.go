@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 2015-07-29 | JS | First version
+// 2015-11-18 | JS | Latest version
+
+//
 // Telecom Tower REST server
+//
 package main
 
 import (
@@ -152,7 +157,7 @@ func towerServer() {
 	for { // Loop forever
 		// Roll until checkpoint!
 		for i := start; i < currentMessage.checkpoint; i++ {
-			tower.DisplayQueue <- currentMessage.matrix.BitmapSliceAt(i, tower.Columns)
+			tower.Write(currentMessage.matrix.BitmapSliceAt(i, tower.Columns))
 		}
 		// Checkpoint
 		select {
@@ -163,7 +168,7 @@ func towerServer() {
 		default:
 			// continue
 			for i := currentMessage.checkpoint; i < currentMessage.matrix.Columns-tower.Columns; i++ {
-				tower.DisplayQueue <- currentMessage.matrix.BitmapSliceAt(i, tower.Columns)
+				tower.Write(currentMessage.matrix.BitmapSliceAt(i, tower.Columns))
 			}
 			// skip preamble for the next run
 			start = currentMessage.preamble
