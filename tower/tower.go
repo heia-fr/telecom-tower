@@ -27,40 +27,39 @@ import (
 	"log"
 )
 
+var tower struct {
+	// DisplayQueue is the communication channel to the Tower's Daemon. The queue
+	// will be created by the Init method and will have a capacity of "queueSize"
+	displayQueue chan []ledmatrix.Color
+	closing      chan chan error
+	initialized  bool
+}
+
 const (
+	Columns = 128
+	Rows    = 8
 	// DisplayQueue capacity. If this value is small, the tower will be more
 	// reactive and can decide to change the display quicker. If the value is
 	// large, the display will be more smooth and the sender can have some
 	// delays in the processing of the information. A value of between 4 and
 	// 16 seems reasonable here.
 	queueSize = 16
-	// gpioPin is the pin where the LEDs matrix control wire is connected to
-	// For the current Telecom Tower, the electronic board uses the pin 18.
-	gpioPin = 18
-	// Columns is the display width. For the current Telecom Tower this is 128.
-	Columns = 128
-	// Rows is the display height. For the current Telecom Tower this is 8.
-	Rows = 8
 )
-
-// DisplayQueue is the communication channel to the Tower's Daemon. The queue
-// will be created by the Init method and will have a capacity of "queueSize"
-var displayQueue chan []ledmatrix.Color
-var closing chan chan error
-
-// initialized is a global variable used to prevent a double initialisation
-// of the tower. This variable is used and set in the Init and Shutdown methods.
-var initialized = false
 
 // Init initialize the tower and starts the Tower's Daemon. The daemon
 // receives bitmap matrix frames and display them on the LEDs.
-func Init(brightness int) {
-	if !initialized {
-		initialized = true
-		ws2811.Init(gpioPin, Rows*Columns, brightness)
-		displayQueue = make(chan []ledmatrix.Color, queueSize)
-		go daemon()
+func Init(gpioPin int, brightness int) err {
+	t := new(Tower)
+	t.Rows = rows
+	t.Columns = columns
+
+	if err := ws2811.Init(gpioPin, t.Rows*t.Columns, brightness); err != nil {
+		return err
 	}
+	t.displayQueue = make(chan []ledmatrix.Color, queueSize)
+	tower.initialized = true
+	go daemon()
+	return nil
 }
 
 // Phantom of the Tower. Goroutine that implements the main loop of the tower.
@@ -68,11 +67,11 @@ func Init(brightness int) {
 func daemon() {
 	for {
 		select {
-		case errc := <-closing:
+		case errc := <-tower.closing:
 			errc <- errors.New("OK")
 			return
-		case req := <-displayQueue:
-			if len(req) == Columns*Rows {
+		case req := <-tower.displayQueue:
+			if len(req) == tower.Columns*t.Rows {
 				ws2811.SetBitmap(req)
 				ws2811.Render()
 				ws2811.Wait()
@@ -84,22 +83,22 @@ func daemon() {
 }
 
 // Write sends the frame to the daemon through the displayQueue channel.
-func Write(frame []ledmatrix.Color) {
-	displayQueue <- frame
+func SendFrame(frame []ledmatrix.Color) {
+	tower.displayQueue <- frame
 }
 
 // Shutdown closes the daemon using the closing channel and shuts down
 // the tower.
 func Shutdown() {
-	if initialized {
+	if tower.initialized {
 		errc := make(chan error)
-		closing <- errc
+		tower.closing <- errc
 		<-errc
 		ws2811.Wait()
 		ws2811.Clear()
 		ws2811.Render()
 		ws2811.Wait()
 		ws2811.Fini()
-		initialized = false
+		tower.initialized = false
 	}
 }

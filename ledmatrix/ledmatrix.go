@@ -14,131 +14,105 @@
 
 package ledmatrix
 
-import (
-	"fmt"
-)
+type Stripe []Color
 
 type Matrix struct {
-	Rows    int
-	Columns int
-	Bitmap  [2][]Color
+	rows    int
+	columns int
+	bitmap  Stripe
 }
 
 func NewMatrix(rows, columns int) *Matrix {
 	m := new(Matrix)
-	m.Rows = rows
-	m.Columns = columns
-	for i := 0; i < len(m.Bitmap); i++ {
-		m.Bitmap[i] = make([]Color, m.Rows*m.Columns)
-	}
+	m.rows = rows
+	m.columns = columns
+	m.bitmap = make(Stripe, m.rows*m.columns)
 	return m
 }
 
-// Check if the bitmaps sizes are consistent with the dimension of the matrix
-func (m *Matrix) check() {
-	size := m.Rows * m.Columns
-	for i := 0; i < len(m.Bitmap); i++ {
-		if len(m.Bitmap[i]) != size {
-			panic(fmt.Sprintf("Bad bitmap %d. Size shoud be %d and is %d", i, size, len(m.Bitmap[i])))
-		}
-	}
+func (m *Matrix) Rows() int {
+	return m.rows
 }
 
-// Check if the coordinate (x,y) is valid in the Matrix. Extend the
-// Matrix if there is not enough space for x
-func (m *Matrix) checkXY(x, y int) {
-	if y < 0 || y >= m.Rows {
-		panic("y out of bound")
-	}
-
-	if x >= m.Columns {
-		requiredSize := (x + 1) * m.Rows
-		if cap(m.Bitmap[0]) < requiredSize {
-			for i := 0; i < len(m.Bitmap); i++ {
-				t := make([]Color, requiredSize)
-				copy(t, m.Bitmap[i])
-				m.Bitmap[i] = t
-			}
-		} else {
-			for i := 0; i < len(m.Bitmap); i++ {
-				m.Bitmap[i] = m.Bitmap[i][:requiredSize]
-			}
-		}
-		m.Columns = x + 1
-	}
+func (m *Matrix) Columns() int {
+	return m.columns
 }
 
 func (m *Matrix) SetPixel(x, y int, color Color) {
-	m.checkXY(x, y)
-	if x%2 == 0 {
-		m.Bitmap[0][x*m.Rows+y] = color
-		m.Bitmap[1][x*m.Rows+(m.Rows-1-y)] = color
-	} else {
-		m.Bitmap[0][x*m.Rows+(m.Rows-1-y)] = color
-		m.Bitmap[1][x*m.Rows+y] = color
+	// Check if the coordinate (x,y) is valid in the Matrix. Extend the
+	// Matrix if there is not enough space for x
+	if y < 0 || y >= m.rows {
+		panic("y out of bound")
 	}
-	m.check()
+	if x < 0 {
+		panic("x out of bound")
+	}
+	if x >= m.columns { // resize
+		requiredSize := (x + 1) * m.rows
+		if cap(m.bitmap) < requiredSize {
+			t := make(Stripe, requiredSize)
+			copy(t, m.bitmap)
+			m.bitmap = t
+		} else {
+			m.bitmap = m.bitmap[:requiredSize]
+		}
+		m.columns = x + 1
+	}
+
+	m.bitmap[x*m.rows+y] = color
 }
 
 func (m *Matrix) GetPixel(x, y int) Color {
-	m.checkXY(x, y)
-	if x%2 == 0 {
-		return m.Bitmap[0][x*m.Rows+y]
-	} else {
-		return m.Bitmap[0][x*m.Rows+(m.Rows-1-y)]
+	if y < 0 || y >= m.rows {
+		panic("y out of bound")
 	}
-}
-
-func (m *Matrix) BitmapSliceAt(column, size int) []Color {
-	index := column % 2
-	return m.Bitmap[index][column*m.Rows : (column+size)*m.Rows]
+	if x < 0 || x >= m.columns {
+		panic("x out of bound")
+	}
+	return m.bitmap[x*m.rows+y]
 }
 
 func (m *Matrix) Slice(low, high int) *Matrix {
 	res := new(Matrix)
-	if low%2 == 0 {
-		res.Bitmap = [2][]Color{
-			m.Bitmap[0][low*m.Rows : high*m.Rows],
-			m.Bitmap[1][low*m.Rows : high*m.Rows]}
-	} else {
-		res.Bitmap = [2][]Color{
-			m.Bitmap[1][low*m.Rows : high*m.Rows],
-			m.Bitmap[0][low*m.Rows : high*m.Rows]}
-	}
-
-	res.Rows = m.Rows
-	res.Columns = high - low
-	res.check()
+	res.bitmap = m.bitmap[low*m.rows : high*m.rows]
+	res.rows = m.rows
+	res.columns = high - low
 	return res
 }
 
 func (m *Matrix) Append(x ...*Matrix) {
 	for _, i := range x {
-		if m.Rows != i.Rows {
+		if m.rows != i.rows {
 			panic("Error Matrix Operation")
 		}
-		if m.Columns%2 == 0 {
-			m.Bitmap = [2][]Color{
-				append(m.Bitmap[0], i.Bitmap[0]...),
-				append(m.Bitmap[1], i.Bitmap[1]...)}
-		} else {
-			m.Bitmap = [2][]Color{
-				append(m.Bitmap[0], i.Bitmap[1]...),
-				append(m.Bitmap[1], i.Bitmap[0]...)}
-		}
-		m.Columns += i.Columns
+		m.bitmap = append(m.bitmap, i.bitmap...)
+		m.columns += i.columns
 	}
-	m.check()
 }
 
 func Concat(a *Matrix, b ...*Matrix) *Matrix {
 	res := new(Matrix)
-	res.Columns = a.Columns
-	res.Rows = a.Rows
-	res.Bitmap = [2][]Color{
-		append(res.Bitmap[0], a.Bitmap[0]...),
-		append(res.Bitmap[1], a.Bitmap[1]...)}
-
+	res.columns = a.columns
+	res.rows = a.rows
+	res.bitmap = append(res.bitmap, a.bitmap...)
 	res.Append(b...)
+	return res
+}
+
+func (m *Matrix) InterleavedStripes() []Stripe {
+	res := make([]Stripe, 2)
+	res[0] = make(Stripe, m.rows*m.columns)
+	res[1] = make(Stripe, m.rows*m.columns)
+	for x := 0; x < m.columns; x++ {
+		for y := 0; y < m.rows; y++ {
+			if x%2 == 0 { // Even Column
+				res[0][x*m.rows+y] = m.bitmap[x*m.rows+y]
+				res[1][x*m.rows+y] = m.bitmap[x*m.rows+m.rows-1-y]
+			} else { // Odd Column
+				res[0][x*m.rows+y] = m.bitmap[x*m.rows+m.rows-1-y]
+				res[1][x*m.rows+y] = m.bitmap[x*m.rows+y]
+			}
+		}
+	}
 	return res
 }
