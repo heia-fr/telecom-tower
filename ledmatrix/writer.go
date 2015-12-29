@@ -15,18 +15,17 @@
 package ledmatrix
 
 import (
-	"github.com/heia-fr/telecom-tower/bitmapfont"
-	"github.com/heia-fr/telecom-tower/cp850"
+	"github.com/heia-fr/telecom-tower/ledmatrix/font"
 )
 
 type Writer struct {
-	Matrix *Matrix
+	matrix *Matrix
 	pos    int
 }
 
 func NewWriter(m *Matrix) *Writer {
 	w := new(Writer)
-	w.Matrix = m
+	w.matrix = m
 	w.pos = 0
 	return w
 }
@@ -39,21 +38,18 @@ func (w *Writer) Pos() int {
 	return w.pos
 }
 
-func (w *Writer) WriteText(text string, font bitmapfont.Font, color, bgColor Color) {
-	t := cp850.StringToCp850(text)
-
-	for i := 0; i < len(t); i++ {
-		a := font.GetCharMSB(t[i])
-		for j := 0; j < font.Width; j++ {
-			for k := 0; k < w.Matrix.Rows; k++ {
-				if a[j]&(1<<uint(k)) != 0 {
-					w.Matrix.SetPixel(w.pos+j, w.Matrix.Rows-1-k, color)
+func (w *Writer) WriteText(text string, font font.Font, color, bgColor Color) {
+	for _, c := range text {
+		for _, i := range font.Bitmap(c) {
+			for k := 0; k < font.Height(); k++ {
+				if i&(1<<uint(k)) != 0 {
+					w.matrix.SetPixel(w.pos, k, color)
 				} else {
-					w.Matrix.SetPixel(w.pos+j, w.Matrix.Rows-1-k, bgColor)
+					w.matrix.SetPixel(w.pos, k, bgColor)
 				}
 			}
+			w.pos++
 		}
-		w.pos += font.Width
 	}
 }
 
@@ -64,33 +60,17 @@ func (w *Writer) WriteBitmap(bitmap [][]Color) {
 			width = len(bitmap[y])
 		}
 		for x := 0; x < len(bitmap[y]); x++ {
-			w.Matrix.SetPixel(w.pos+x, y, bitmap[y][x])
+			w.matrix.SetPixel(w.pos+x, y, bitmap[y][x])
 		}
 	}
 	w.pos += width
 }
 
 func (w *Writer) Spacer(width int, color Color) {
-	for y := 0; y < w.Matrix.Rows; y++ {
+	for y := 0; y < w.matrix.rows; y++ {
 		for x := 0; x < width; x++ {
-			w.Matrix.SetPixel(w.pos+x, y, color)
+			w.matrix.SetPixel(w.pos+x, y, color)
 		}
 	}
 	w.pos += width
 }
-
-// func (w *Writer) ExtendCircular(from int) {
-// 	for i := 0; i < w.Matrix.Columns; i++ {
-// 		for j := 0; j < w.Matrix.Rows; j++ {
-// 			w.Matrix.SetPixel(w.pos+i, j, w.Matrix.GetPixel(from+i, j))
-// 		}
-// 	}
-// }
-
-// func (w *Writer) ExtendClear(bgColor Color) {
-// 	for i := 0; i < w.Matrix.Columns; i++ {
-// 		for j := 0; j < w.Matrix.Rows; j++ {
-// 			w.Matrix.SetPixel(w.pos+i, j, bgColor)
-// 		}
-// 	}
-// }

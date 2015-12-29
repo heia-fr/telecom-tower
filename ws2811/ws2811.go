@@ -23,30 +23,46 @@ package ws2811
 #cgo LDFLAGS: -lws2811
 #include "ws2811.go.h"
 */
-import "C"
-import "unsafe"
-import "github.com/heia-fr/telecom-tower/ledmatrix"
+import (
+	"C"
+	"error"
+	"fmt"
+	"github.com/heia-fr/telecom-tower/ledmatrix"
+	"unsafe"
+)
 
-func Init(gpioPin int, ledCount int, brightness int) int {
+func Init(gpioPin int, ledCount int, brightness int) error {
 	C.ledstring.channel[0].gpionum = C.int(gpioPin)
 	C.ledstring.channel[0].count = C.int(ledCount)
 	C.ledstring.channel[0].brightness = C.int(brightness)
 	res := int(C.ws2811_init(&C.ledstring))
-	return res
+	if res == 0 {
+		return nil
+	} else {
+		return error.New(fmt.Sprintf("Error ws2811.init.%d", res))
+	}
 }
 
 func Fini() {
 	C.ws2811_fini(&C.ledstring)
 }
 
-func Render() int {
+func Render() error {
 	res := int(C.ws2811_render(&C.ledstring))
-	return res
+	if res == 0 {
+		return nil
+	} else {
+		return error.New(fmt.Sprintf("Error ws2811.render.%d", res))
+	}
 }
 
-func Wait() int {
+func Wait() error {
 	res := int(C.ws2811_wait(&C.ledstring))
-	return res
+	if res == 0 {
+		return nil
+	} else {
+		return error.New(fmt.Sprintf("Error ws2811.wait.%d", res))
+	}
 }
 
 func SetLed(index int, value ledmatrix.Color) {
