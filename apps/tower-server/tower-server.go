@@ -25,9 +25,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/heia-fr/telecom-tower/cloud/tower"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"github.com/heia-fr/telecom-tower/ledmatrix/font"
+	"github.com/heia-fr/telecom-tower/tower"
 	"log"
 	"net/http"
 )
@@ -185,6 +185,7 @@ func towerServer() {
 			// Display the message at least once
 			towerRoll(currentMessage, 0, currentMessage.checkpoint)
 		case r := <-roll:
+			log.Println("roll")
 			towerRoll(
 				currentMessage,
 				currentMessage.checkpoint,                               // from checkpoint

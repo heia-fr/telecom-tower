@@ -21,15 +21,6 @@ var upgrader = websocket.Upgrader{
 
 type Bitmap [][]string
 
-func readLoop(c *websocket.Conn) {
-	for {
-		if _, _, err := c.NextReader(); err != nil {
-			c.Close()
-			break
-		}
-	}
-}
-
 func handler(w http.ResponseWriter, r *http.Request) {
 
 	nc, _ := nats.Connect(nats.DefaultURL)
@@ -44,7 +35,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	go readLoop(conn)
+
+	// readloop
+	go func(c *websocket.Conn) {
+		for {
+			if _, _, err := c.NextReader(); err != nil {
+				c.Close()
+				break
+			}
+		}
+	}(conn)
 
 	for {
 		frame := <-frameChannel
