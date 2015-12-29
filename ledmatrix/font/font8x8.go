@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Credit: Thank you Benedikt K. for the original bitmap font files.
+//         http://www.mikrocontroller.net/topic/54860
+
 // Bitmap font 8x8
 package font
 
