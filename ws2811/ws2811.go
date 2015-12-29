@@ -25,7 +25,6 @@ package ws2811
 */
 import (
 	"C"
-	"error"
 	"fmt"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"unsafe"
