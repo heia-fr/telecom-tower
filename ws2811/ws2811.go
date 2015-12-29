@@ -16,6 +16,9 @@
 // ws2811.h and pwm.h in a GCC include path (e.g. /usr/local/include) and
 // libws2811.a in a GCC library path (e.g. /usr/local/lib).
 // See https://github.com/jgarff/rpi_ws281x for instructions
+
+// +build physical
+
 package ws2811
 
 /*
