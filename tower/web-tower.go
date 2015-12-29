@@ -16,28 +16,27 @@
 // 2015-11-18 | JS | Latest version
 
 //
-// Package to display info on the Telecom Tower
+// Package to send info to a NATS server
 //
+
+// +build !physical
+
 package tower
 
 import (
 	"errors"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
-	"github.com/heia-fr/telecom-tower/ws2811"
+	"github.com/nats-io/nats"
 	"log"
+	"math"
+	"time"
 )
 
-var tower struct {
-	// DisplayQueue is the communication channel to the Tower's Daemon. The queue
-	// will be created by the Init method and will have a capacity of "queueSize"
-	displayQueue chan []ledmatrix.Color
-	closing      chan chan error
-	initialized  bool
-}
-
 const (
-	Columns = 128
 	Rows    = 8
+	Columns = 128
+	subject = "tower.frames"
+	fps     = 33.0 // frame per secons
 	// DisplayQueue capacity. If this value is small, the tower will be more
 	// reactive and can decide to change the display quicker. If the value is
 	// large, the display will be more smooth and the sender can have some
@@ -46,17 +45,28 @@ const (
 	queueSize = 16
 )
 
+var tower struct {
+	// DisplayQueue is the communication channel to the Tower's Daemon. The queue
+	// will be created by the Init method and will have a capacity of "queueSize"
+	conn         *nats.EncodedConn
+	displayQueue chan ledmatrix.Stripe
+	closing      chan chan error
+	initialized  bool
+}
+
 // Init initialize the tower and starts the Tower's Daemon. The daemon
 // receives bitmap matrix frames and display them on the LEDs.
-func Init(gpioPin int, brightness int) err {
-	t := new(Tower)
-	t.Rows = rows
-	t.Columns = columns
-
-	if err := ws2811.Init(gpioPin, t.Rows*t.Columns, brightness); err != nil {
+func Init(gpioPin int, brightness int) error {
+	var nc *nats.Conn
+	var err error
+	if nc, err = nats.Connect(nats.DefaultURL); err != nil {
 		return err
 	}
-	t.displayQueue = make(chan []ledmatrix.Color, queueSize)
+	if tower.conn, err = nats.NewEncodedConn(nc, nats.JSON_ENCODER); err != nil {
+		return err
+	}
+
+	tower.displayQueue = make(chan ledmatrix.Stripe, queueSize)
 	tower.initialized = true
 	go daemon()
 	return nil
@@ -70,19 +80,18 @@ func daemon() {
 		case errc := <-tower.closing:
 			errc <- errors.New("OK")
 			return
-		case req := <-tower.displayQueue:
-			if len(req) == tower.Columns*t.Rows {
-				ws2811.SetBitmap(req)
-				ws2811.Render()
-				ws2811.Wait()
+		case frame := <-tower.displayQueue:
+			if len(frame) == Columns*Rows {
+				tower.conn.Publish(subject, frame)
+				time.Sleep(time.Duration(math.Floor((1.0 / fps) * float64(time.Second))))
 			} else {
-				log.Fatalf("Invalid frame (%d instead of %d)", len(req), Columns*Rows)
+				log.Fatalf("Invalid frame (%d instead of %d)", len(frame), Columns*Rows)
 			}
 		}
 	}
 }
 
-// Write sends the frame to the daemon through the displayQueue channel.
+// SendFrame sends the frame to the daemon through the displayQueue channel.
 func SendFrame(frame []ledmatrix.Color) {
 	tower.displayQueue <- frame
 }
@@ -94,11 +103,7 @@ func Shutdown() {
 		errc := make(chan error)
 		tower.closing <- errc
 		<-errc
-		ws2811.Wait()
-		ws2811.Clear()
-		ws2811.Render()
-		ws2811.Wait()
-		ws2811.Fini()
+		tower.conn.Close()
 		tower.initialized = false
 	}
 }
