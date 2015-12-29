@@ -21,12 +21,12 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/heia-fr/telecom-tower/bitmapfont"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
+	"github.com/heia-fr/telecom-tower/sprite"
 	"github.com/heia-fr/telecom-tower/tower"
 	"log"
 	"net/http"
@@ -94,54 +94,6 @@ func blank(len int, bg ledmatrix.Color) *ledmatrix.Matrix {
 	return writer.Matrix
 }
 
-// displayBuilder is a goroutine that converts text messages to bitmaps. The data
-// usually comes from a REST request and the bitmap is then sent to the
-// towerServer
-func displayBuilder() {
-	bg := ledmatrix.RGB(0, 0, 0)
-	preamble := blank(tower.Columns, bg)
-
-	for { // Loop forever
-		// Receive a text message
-		message := <-textMsgQueue
-		// render all parts of the message
-		body := renderedTextMessage(message.Body, bg)
-		introduction := renderedTextMessage(message.Introduction, bg)
-		conclusion := renderedTextMessage(message.Conclusion, bg)
-		separator := renderedTextMessage(message.Separator, bg)
-
-		if body.Columns == 0 {
-			log.Println("Skip empty message")
-			continue
-		}
-
-		// we need at least a full display. So if the message is too short,
-		// then append tbe separator and aother copy of the message.
-		// We re-render the message and this is not optimal, but this
-		// is only usd for shirt messages, so this is OK.
-		for body.Columns < tower.Columns {
-			body.Append(separator, renderedTextMessage(message.Body, bg))
-		}
-
-		// Append the introduction to the preamble
-		preamble.Append(introduction)
-
-		// Compute the wrapper. The wrapper makes the link between the end and
-		// the start of the message, allowing it to "roll" properly.
-		wrapper := ledmatrix.Concat(separator, body.Slice(0, tower.Columns))
-
-		// Send the bitmap message
-		bitmapMsgQueue <- BitmapMessage{
-			matrix:     ledmatrix.Concat(preamble, body, wrapper),
-			preamble:   preamble.Columns,
-			checkpoint: preamble.Columns + body.Columns - tower.Columns,
-		}
-
-		// Compute the next preamble using the last frame of the body and the conclusion
-		preamble = ledmatrix.Concat(body.Slice(body.Columns-tower.Columns, body.Columns), conclusion)
-	}
-}
-
 // towerServer is a the goroutine that receives bitmap messages from the displayBuilder
 // and dispatch "frames" to the tower LEDs. The preamble is only sent once; at the
 // checkpoint, the goroutine checks if a new message is available; if yes, it switches
@@ -179,16 +131,46 @@ func towerServer() {
 // PostMessage is the main entry point of the REST server. JSON messages
 // posted here are sent to the displayBuilder goroutine through the textMsgQueue.
 func PostMessage(w http.ResponseWriter, r *http.Request) {
-	var message TextMessage
-	dec := json.NewDecoder(r.Body)
+	fmt.Fprintf(w, "OK\n")
+}
 
-	// decode the JSON message
-	if err := dec.Decode(&message); err != nil {
-		fmt.Fprintf(w, "err\n")
-	} else {
-		textMsgQueue <- message
-		fmt.Fprintf(w, "OK\n")
+func sendMessage() {
+	bg := ledmatrix.RGB(0, 0, 0)
+	preamble := blank(tower.Columns, bg)
+
+	spr := sprite.NewSpriteFromImage("tower-sep.png")
+
+	matrix := ledmatrix.NewMatrix(tower.Rows, 0)
+	writer := ledmatrix.NewWriter(matrix)
+	writer.Spacer(matrix.Columns, 0) // Blank bootstrap
+	writer.WriteText("Filière Télécommunications ", bitmapfont.F68, ledmatrix.RGB(248, 179, 30), bg)
+	writer.WriteText("// ", bitmapfont.F68, ledmatrix.RGB(30, 30, 250), bg)
+	writer.WriteText("Filière Télécommunications ", bitmapfont.F68, ledmatrix.RGB(248, 179, 30), bg)
+
+	writer.WriteBitmap(spr.Bitmap)
+	writer.WriteText(" Fribourg is awesome #TelecomTower ", bitmapfont.F68, ledmatrix.RGB(100, 50, 250), bg)
+	writer.WriteBitmap(spr.Bitmap)
+	writer.WriteText(" Fribourg is awesome #TelecomTower ", bitmapfont.F68, ledmatrix.RGB(100, 50, 250), bg)
+
+	body := writer.Matrix
+
+	introduction := renderedTextMessage([]Line{Line{"", 8, "#FF0000"}}, bg)
+	separator := renderedTextMessage([]Line{Line{"        ", 8, "#FF0000"}}, bg)
+
+	// Append the introduction to the preamble
+	preamble.Append(introduction)
+
+	// Compute the wrapper. The wrapper makes the link between the end and
+	// the start of the message, allowing it to "roll" properly.
+	wrapper := ledmatrix.Concat(separator, body.Slice(0, tower.Columns))
+
+	// Send the bitmap message
+	bitmapMsgQueue <- BitmapMessage{
+		matrix:     ledmatrix.Concat(preamble, body, wrapper),
+		preamble:   preamble.Columns,
+		checkpoint: preamble.Columns + body.Columns - tower.Columns,
 	}
+
 }
 
 // tower-server starts a REST server and starts the towerServer goroutine and
@@ -207,8 +189,9 @@ func main() {
 	bitmapMsgQueue = make(chan BitmapMessage, BITMAP_MSG_QUEUE_SIZE)
 
 	go towerServer()
-	go displayBuilder()
 	log.Println("Tower ready.")
+
+	sendMessage()
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Methods("POST").Path("/message").HandlerFunc(PostMessage)
