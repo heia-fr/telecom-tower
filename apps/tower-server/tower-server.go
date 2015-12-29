@@ -185,7 +185,6 @@ func towerServer() {
 			// Display the message at least once
 			towerRoll(currentMessage, 0, currentMessage.checkpoint)
 		case r := <-roll:
-			log.Println("roll")
 			towerRoll(
 				currentMessage,
 				currentMessage.checkpoint,                               // from checkpoint

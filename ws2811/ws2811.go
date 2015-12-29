@@ -23,8 +23,9 @@ package ws2811
 #cgo LDFLAGS: -lws2811
 #include "ws2811.go.h"
 */
+import "C"
 import (
-	"C"
+	"errors"
 	"fmt"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"unsafe"
@@ -38,7 +39,7 @@ func Init(gpioPin int, ledCount int, brightness int) error {
 	if res == 0 {
 		return nil
 	} else {
-		return error.New(fmt.Sprintf("Error ws2811.init.%d", res))
+		return errors.New(fmt.Sprintf("Error ws2811.init.%d", res))
 	}
 }
 
@@ -51,7 +52,7 @@ func Render() error {
 	if res == 0 {
 		return nil
 	} else {
-		return error.New(fmt.Sprintf("Error ws2811.render.%d", res))
+		return errors.New(fmt.Sprintf("Error ws2811.render.%d", res))
 	}
 }
 
@@ -60,7 +61,7 @@ func Wait() error {
 	if res == 0 {
 		return nil
 	} else {
-		return error.New(fmt.Sprintf("Error ws2811.wait.%d", res))
+		return errors.New(fmt.Sprintf("Error ws2811.wait.%d", res))
 	}
 }
 

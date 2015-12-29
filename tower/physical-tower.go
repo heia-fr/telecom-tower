@@ -30,14 +30,6 @@ import (
 	"log"
 )
 
-var tower struct {
-	// DisplayQueue is the communication channel to the Tower's Daemon. The queue
-	// will be created by the Init method and will have a capacity of "queueSize"
-	displayQueue chan []ledmatrix.Color
-	closing      chan chan error
-	initialized  bool
-}
-
 const (
 	Columns = 128
 	Rows    = 8
@@ -49,17 +41,21 @@ const (
 	queueSize = 16
 )
 
+var tower struct {
+	// DisplayQueue is the communication channel to the Tower's Daemon. The queue
+	// will be created by the Init method and will have a capacity of "queueSize"
+	displayQueue chan ledmatrix.Stripe
+	closing      chan chan error
+	initialized  bool
+}
+
 // Init initialize the tower and starts the Tower's Daemon. The daemon
 // receives bitmap matrix frames and display them on the LEDs.
-func Init(gpioPin int, brightness int) err {
-	t := new(Tower)
-	t.Rows = rows
-	t.Columns = columns
-
-	if err := ws2811.Init(gpioPin, t.Rows*t.Columns, brightness); err != nil {
+func Init(gpioPin int, brightness int) error {
+	if err := ws2811.Init(gpioPin, Rows*Columns, brightness); err != nil {
 		return err
 	}
-	t.displayQueue = make(chan []ledmatrix.Color, queueSize)
+	tower.displayQueue = make(chan ledmatrix.Stripe, queueSize)
 	tower.initialized = true
 	go daemon()
 	return nil
@@ -74,7 +70,7 @@ func daemon() {
 			errc <- errors.New("OK")
 			return
 		case req := <-tower.displayQueue:
-			if len(req) == tower.Columns*t.Rows {
+			if len(req) == Columns*Rows {
 				ws2811.SetBitmap(req)
 				ws2811.Render()
 				ws2811.Wait()
