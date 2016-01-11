@@ -39,7 +39,7 @@ func (w *Writer) Pos() int {
 }
 
 func (w *Writer) WriteText(text string, font font.Font, color, bgColor Color) {
-	for _, c := range ExpandAlias(text) {
+	for _, c := range font.ExpandAlias(text) {
 		for _, i := range font.Bitmap(c) {
 			for k := 0; k < font.Height(); k++ {
 				if i&(1<<uint(k)) != 0 {
