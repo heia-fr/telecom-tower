@@ -38,10 +38,10 @@ func (w *Writer) Pos() int {
 	return w.pos
 }
 
-func (w *Writer) WriteText(text string, font font.Font, color, bgColor Color) {
+func (w *Writer) WriteText(text string, fnt font.Font, color, bgColor Color) {
 	for _, c := range font.ExpandAlias(text) {
-		for _, i := range font.Bitmap(c) {
-			for k := 0; k < font.Height(); k++ {
+		for _, i := range fnt.Bitmap(c) {
+			for k := 0; k < fnt.Height(); k++ {
 				if i&(1<<uint(k)) != 0 {
 					w.matrix.SetPixel(w.pos, k, color)
 				} else {
