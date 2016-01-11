@@ -15,10 +15,38 @@
 // Bitmap fonts
 package font
 
+import (
+	"bytes"
+)
+
+var alias = map[rune]string{
+	0x2764:     "\u2665", // ❤
+	0x0001F601: ":|",     // 😁
+	0x0001F602: ":)",     // 😂
+	0x0001F603: ":D",     // 😃
+}
+
 type Font struct {
 	width  int
 	height int
 	bitmap map[rune][]byte
+}
+
+func ExpandAlias(text string) string {
+	var f func(b *bytes.Buffer, s string)
+	f = func(b *bytes.Buffer, s string) {
+		for _, c := range s {
+			m, ok := alias[c]
+			if ok {
+				f(b, m)
+			} else {
+				b.WriteRune(c)
+			}
+		}
+	}
+	b := new(bytes.Buffer)
+	f(b, text)
+	return b.String()
 }
 
 func (f *Font) Height() int {

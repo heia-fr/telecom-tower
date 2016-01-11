@@ -48,6 +48,12 @@ func TestBitmaps(t *testing.T) {
 	}
 }
 
+func TestMapping(t *testing.T) {
+	if ExpandAlias("Hello \U0001F601") != "Hello :|" {
+		t.Error("Alias failed")
+	}
+}
+
 func ExampleA() {
 	f := Font8x8
 	c := f.Bitmap('A')
