@@ -7,12 +7,12 @@ import (
 func TestBasic(t *testing.T) {
 	m := NewMatrix(8, 0)
 	m.SetPixel(4, 4, White)
-	if m.columns != 5 {
-		t.Errorf("Columns shoud now be 5 instead of %d", m.rows)
+	if m.Columns != 5 {
+		t.Errorf("Columns shoud now be 5 instead of %d", m.Rows)
 	}
 	m.SetPixel(2, 2, Red)
-	if m.columns != 5 {
-		t.Errorf("Columns shoud still be 5 instead of %d", m.rows)
+	if m.Columns != 5 {
+		t.Errorf("Columns shoud still be 5 instead of %d", m.Rows)
 	}
 
 	if m.GetPixel(2, 2) != Red {
@@ -34,11 +34,11 @@ func TestSlice(t *testing.T) {
 	m.SetPixel(7, 4, White)
 
 	n := m.Slice(4, 8)
-	if n.rows != m.rows {
+	if n.Rows != m.Rows {
 		t.Error("Number of rows is not the same")
 	}
-	if n.columns != 4 {
-		t.Errorf("Number of columns is %d instead of 4", n.columns)
+	if n.Columns != 4 {
+		t.Errorf("Number of columns is %d instead of 4", n.Columns)
 	}
 
 	if n.GetPixel(0, 4) != White {

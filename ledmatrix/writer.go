@@ -67,7 +67,7 @@ func (w *Writer) WriteBitmap(bitmap [][]Color) {
 }
 
 func (w *Writer) Spacer(width int, color Color) {
-	for y := 0; y < w.matrix.rows; y++ {
+	for y := 0; y < w.matrix.Rows; y++ {
 		for x := 0; x < width; x++ {
 			w.matrix.SetPixel(w.pos+x, y, color)
 		}
