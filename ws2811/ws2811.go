@@ -17,7 +17,7 @@
 // libws2811.a in a GCC library path (e.g. /usr/local/lib).
 // See https://github.com/jgarff/rpi_ws281x for instructions
 
-// +build physical
+// +build !virtual
 
 package ws2811
 
