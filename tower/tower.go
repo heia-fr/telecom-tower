@@ -19,7 +19,7 @@
 // Package to display info on the Telecom Tower
 //
 
-// +build !virtual
+// +build physical
 
 package tower
 
@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	Columns = 128
-	Rows    = 8
 	// DisplayQueue capacity. If this value is small, the tower will be more
 	// reactive and can decide to change the display quicker. If the value is
 	// large, the display will be more smooth and the sender can have some

@@ -27,11 +27,6 @@ import (
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 )
 
-const (
-	Columns = 128
-	Rows    = 8
-)
-
 func Init(gpioPin int, brightness int) error {
 	return nil
 }
