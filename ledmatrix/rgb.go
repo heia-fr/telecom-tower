@@ -14,9 +14,7 @@
 
 package ledmatrix
 
-type Color uint32
-
-func RGB(r, g, b int) Color {
+func RGB(r, g, b int) uint32 {
 	if r < 0 || r > 255 {
 		panic("Red component must be between 0 and 255")
 	}
@@ -26,10 +24,10 @@ func RGB(r, g, b int) Color {
 	if b < 0 || b > 255 {
 		panic("Blue component must be between 0 and 255")
 	}
-	return Color(r)<<16 + Color(g)<<8 + Color(b)
+	return uint32(r)<<16 + uint32(g)<<8 + uint32(b)
 }
 
-var Red, Green, Blue, White, Black Color
+var Red, Green, Blue, White, Black uint32
 
 func init() {
 	Red = RGB(255, 0, 0)

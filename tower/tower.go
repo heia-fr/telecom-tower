@@ -69,11 +69,7 @@ func daemon() {
 			return
 		case req := <-tower.displayQueue:
 			if len(req) == Columns*Rows {
-				data := make([]uint32, len(req))
-				for i := range req {
-					data[i] = uint32(req[i])
-				}
-				ws2811.SetBitmap(data)
+				ws2811.SetBitmap(req)
 				ws2811.Render()
 				ws2811.Wait()
 			} else {
@@ -84,7 +80,7 @@ func daemon() {
 }
 
 // Write sends the frame to the daemon through the displayQueue channel.
-func SendFrame(frame []ledmatrix.Color) {
+func SendFrame(frame []uint32) {
 	tower.displayQueue <- frame
 }
 

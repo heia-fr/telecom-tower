@@ -23,15 +23,11 @@
 
 package tower
 
-import (
-	"github.com/heia-fr/telecom-tower/ledmatrix"
-)
-
 func Init(gpioPin int, brightness int) error {
 	return nil
 }
 
-func SendFrame(frame []ledmatrix.Color) {
+func SendFrame(frame []uint32) {
 }
 
 func Shutdown() {

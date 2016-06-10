@@ -38,7 +38,7 @@ func (w *Writer) Pos() int {
 	return w.pos
 }
 
-func (w *Writer) WriteText(text string, fnt font.Font, color, bgColor Color) {
+func (w *Writer) WriteText(text string, fnt font.Font, color, bgColor uint32) {
 	for _, c := range font.ExpandAlias(text) {
 		for _, i := range fnt.Bitmap(c) {
 			for k := 0; k < fnt.Height(); k++ {
@@ -53,7 +53,7 @@ func (w *Writer) WriteText(text string, fnt font.Font, color, bgColor Color) {
 	}
 }
 
-func (w *Writer) WriteBitmap(bitmap [][]Color) {
+func (w *Writer) WriteBitmap(bitmap [][]uint32) {
 	width := 0
 	for y := 0; y < len(bitmap); y++ {
 		if len(bitmap[y]) > width {
@@ -66,7 +66,7 @@ func (w *Writer) WriteBitmap(bitmap [][]Color) {
 	w.pos += width
 }
 
-func (w *Writer) Spacer(width int, color Color) {
+func (w *Writer) Spacer(width int, color uint32) {
 	for y := 0; y < w.matrix.Rows; y++ {
 		for x := 0; x < width; x++ {
 			w.matrix.SetPixel(w.pos+x, y, color)

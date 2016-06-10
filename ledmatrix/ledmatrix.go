@@ -14,7 +14,7 @@
 
 package ledmatrix
 
-type Stripe []Color
+type Stripe []uint32
 
 type Matrix struct {
 	Rows    int
@@ -30,7 +30,7 @@ func NewMatrix(rows, columns int) *Matrix {
 	return m
 }
 
-func (m *Matrix) SetPixel(x, y int, color Color) {
+func (m *Matrix) SetPixel(x, y int, color uint32) {
 	// Check if the coordinate (x,y) is valid in the Matrix. Extend the
 	// Matrix if there is not enough space for x
 	if y < 0 || y >= m.Rows {
@@ -54,7 +54,7 @@ func (m *Matrix) SetPixel(x, y int, color Color) {
 	m.Bitmap[x*m.Rows+y] = color
 }
 
-func (m *Matrix) GetPixel(x, y int) Color {
+func (m *Matrix) GetPixel(x, y int) uint32 {
 	if y < 0 || y >= m.Rows {
 		panic("y out of bound")
 	}
