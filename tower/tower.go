@@ -69,7 +69,11 @@ func daemon() {
 			return
 		case req := <-tower.displayQueue:
 			if len(req) == Columns*Rows {
-				ws2811.SetBitmap(req)
+				data := make([]uint32, len(req))
+				for i := range req {
+					data[i] = uint32(req[i])
+				}
+				ws2811.SetBitmap(data)
 				ws2811.Render()
 				ws2811.Wait()
 			} else {
