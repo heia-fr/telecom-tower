@@ -26,7 +26,7 @@ package tower
 import (
 	"errors"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
-	"github.com/heia-fr/telecom-tower/ws2811"
+	"github.com/supcik-go/ws2811"
 	"log"
 )
 
