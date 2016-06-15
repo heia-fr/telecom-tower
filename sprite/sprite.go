@@ -25,16 +25,16 @@ import (
 
 type Sprite struct {
 	Width, Height int
-	Bitmap        [][]ledmatrix.Color
+	Bitmap        [][]uint32
 }
 
 func NewSprite(width, height int) *Sprite {
 	s := new(Sprite)
 	s.Width = width
 	s.Height = height
-	s.Bitmap = make([][]ledmatrix.Color, height)
+	s.Bitmap = make([][]uint32, height)
 	for i := 0; i < height; i++ {
-		s.Bitmap[i] = make([]ledmatrix.Color, width)
+		s.Bitmap[i] = make([]uint32, width)
 	}
 	return s
 }
@@ -67,6 +67,6 @@ func NewSpriteFromImage(fileName string) *Sprite {
 	return s
 }
 
-func (s *Sprite) SetPixel(x, y int, c ledmatrix.Color) {
+func (s *Sprite) SetPixel(x, y int, c uint32) {
 	s.Bitmap[y][x] = c
 }

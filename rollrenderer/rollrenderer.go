@@ -48,7 +48,7 @@ type BitmapMessage struct {
 
 // renderdeTextMessage convert a text to a LED bitmap matrix.
 // This method is used by the displayBuilder gorouting.
-func textToBitmap(text []Line, bg ledmatrix.Color) *ledmatrix.Matrix {
+func textToBitmap(text []Line, bg uint32) *ledmatrix.Matrix {
 	matrix := ledmatrix.NewMatrix(tower.Rows, 0)
 	writer := ledmatrix.NewWriter(matrix)
 	writer.Spacer(matrix.Columns, 0) // Blank bootstrap
@@ -70,7 +70,7 @@ func textToBitmap(text []Line, bg ledmatrix.Color) *ledmatrix.Matrix {
 }
 
 // blank generates a "space" from the given color
-func blank(len int, bg ledmatrix.Color) *ledmatrix.Matrix {
+func blank(len int, bg uint32) *ledmatrix.Matrix {
 	matrix := ledmatrix.NewMatrix(tower.Rows, tower.Columns)
 	writer := ledmatrix.NewWriter(matrix)
 	writer.Spacer(tower.Columns, bg) // Blank spacer

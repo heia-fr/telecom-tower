@@ -1,4 +1,4 @@
-// Copyright 2015 Jacques Supcik, HEIA-FR
+// Copyright 2016 Jacques Supcik, HEIA-FR
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,8 @@
 // limitations under the License.
 
 // 2015-07-29 | JS | First version
-// 2015-11-18 | JS | Latest version
+// 2015-11-18 | JS | Version 1.0
+// 2016-06-15 | JS | Version 2.0 with new ws2811
 
 //
 // Package to display info on the Telecom Tower
@@ -42,6 +43,7 @@ const (
 var tower struct {
 	// DisplayQueue is the communication channel to the Tower's Daemon. The queue
 	// will be created by the Init method and will have a capacity of "queueSize"
+	ws           *ws2811.WS2811
 	displayQueue chan ledmatrix.Stripe
 	closing      chan chan error
 	initialized  bool
@@ -50,9 +52,16 @@ var tower struct {
 // Init initialize the tower and starts the Tower's Daemon. The daemon
 // receives bitmap matrix frames and display them on the LEDs.
 func Init(gpioPin int, brightness int) error {
-	if err := ws2811.Init(gpioPin, Rows*Columns, brightness); err != nil {
+	ws, err := ws2811.MakeWS2811(ws2811.TargetFreq, ws2811.DefaultDmaNum)
+	if err != nil {
 		return err
 	}
+	ws.SetChannel(0, gpioPin, Rows*Columns, brightness, 0, ws2811.StripGRB)
+    err = ws.Init()
+    if err != nil {
+        return err
+    }
+	tower.ws = ws
 	tower.displayQueue = make(chan ledmatrix.Stripe, queueSize)
 	tower.initialized = true
 	go daemon()
@@ -69,9 +78,9 @@ func daemon() {
 			return
 		case req := <-tower.displayQueue:
 			if len(req) == Columns*Rows {
-				ws2811.SetBitmap(req)
-				ws2811.Render()
-				ws2811.Wait()
+				tower.ws.SetBitmap(req)
+				tower.ws.Render()
+				tower.ws.Wait()
 			} else {
 				log.Fatalf("Invalid frame (%d instead of %d)", len(req), Columns*Rows)
 			}
@@ -91,11 +100,11 @@ func Shutdown() {
 		errc := make(chan error)
 		tower.closing <- errc
 		<-errc
-		ws2811.Wait()
-		ws2811.Clear()
-		ws2811.Render()
-		ws2811.Wait()
-		ws2811.Fini()
+		tower.ws.Wait()
+		tower.ws.Clear()
+		tower.ws.Render()
+		tower.ws.Wait()
+		tower.ws.Fini()
 		tower.initialized = false
 	}
 }
