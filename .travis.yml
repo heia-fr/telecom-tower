@@ -3,7 +3,6 @@ language: go
 go:
   - 1.5
   - 1.6
-  - tip
 
 matrix:
   allow_failures:
@@ -26,8 +25,9 @@ before_install:
   - git clone https://github.com/jgarff/rpi_ws281x.git
   - cd rpi_ws281x
   - patch -i ${TRAVIS_BUILD_DIR}/01_cross.patch
-  - patch -i ${TRAVIS_BUILD_DIR}/02_go.patch
   - scons
+  - cd ..
+  - patch -i ${TRAVIS_BUILD_DIR}/02_go.patch
 
 install:
   - export CGO_ENABLED=1
