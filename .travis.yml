@@ -39,4 +39,5 @@ install:
   - export LIBRARY_PATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
   - go env
   - env
+  - find ${GOPATH}
   - go get -t -v ./...
