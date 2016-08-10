@@ -36,6 +36,6 @@ install:
   - go get -t -v ./...
 
 script:
-  - echo "This test must be run on a Raspberry Pi"
-  - echo "So we are happy it it compiles properly"
+  # This test must be run on a Raspberry Pi
+  # So we are happy it it compiles properly
   - true
