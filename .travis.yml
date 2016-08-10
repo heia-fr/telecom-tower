@@ -29,7 +29,7 @@ before_install:
   - cd ..
   - patch -i ${TRAVIS_BUILD_DIR}/02_go.patch
 
-before_script:
+script:
   - export CGO_ENABLED=1
   - export GOOS=linux
   - export GOARCH=arm
@@ -39,3 +39,4 @@ before_script:
   - export LIBRARY_PATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
   - go env
   - env
+  - go get -t -v ./...
