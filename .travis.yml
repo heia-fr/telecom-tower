@@ -26,6 +26,7 @@ before_install:
   - git clone https://github.com/jgarff/rpi_ws281x.git
   - cd rpi_ws281x
   - patch -i ${TRAVIS_BUILD_DIR}/01_cross.patch
+  - patch -i ${TRAVIS_BUILD_DIR}/02_go.patch
   - scons
 
 install:
@@ -36,4 +37,4 @@ install:
   - export CXX_FOR_TARGET=arm-linux-gnueabihf-g++
   - export CPATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
   - export LIBRARY_PATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
-  - patch -i ${TRAVIS_BUILD_DIR}/02_go.patch
+  - go env
