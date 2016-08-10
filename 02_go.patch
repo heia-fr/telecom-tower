@@ -1,0 +1,13 @@
+--- ws2811.go.orig	2016-06-16 01:20:35.261015807 +0200
++++ ws2811.go	2016-06-16 01:21:15.293021807 +0200
+@@ -22,8 +22,8 @@
+ package ws2811
+
+ /*
+-#cgo CFLAGS: -std=c99
+-#cgo LDFLAGS: -lws2811
++#cgo CFLAGS: -std=c99 -I${SRCDIR}/rpi_ws281x
++#cgo LDFLAGS: -lws2811 -L${SRCDIR}/rpi_ws281x
+ #include "ws2811.go.h"
+ */
+ import "C"

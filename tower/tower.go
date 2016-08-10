@@ -15,12 +15,11 @@
 // 2015-07-29 | JS | First version
 // 2015-11-18 | JS | Version 1.0
 // 2016-06-15 | JS | Version 2.0 with new ws2811
+// 2016-08-10 | JS | Remove "virtual" version
 
 //
 // Package to display info on the Telecom Tower
 //
-
-// +build physical
 
 package tower
 
@@ -32,6 +31,9 @@ import (
 )
 
 const (
+	Columns = 128
+	Rows    = 8
+
 	// DisplayQueue capacity. If this value is small, the tower will be more
 	// reactive and can decide to change the display quicker. If the value is
 	// large, the display will be more smooth and the sender can have some
@@ -57,10 +59,10 @@ func Init(gpioPin int, brightness int) error {
 		return err
 	}
 	ws.SetChannel(0, gpioPin, Rows*Columns, brightness, 0, ws2811.StripGRB)
-    err = ws.Init()
-    if err != nil {
-        return err
-    }
+	err = ws.Init()
+	if err != nil {
+		return err
+	}
 	tower.ws = ws
 	tower.displayQueue = make(chan ledmatrix.Stripe, queueSize)
 	tower.initialized = true

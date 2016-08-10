@@ -1,0 +1,13 @@
+﻿--- SConstruct.orig	2016-06-16 00:34:02.456012002 +0200
++++ SConstruct	2016-06-15 20:45:59.042480339 +0200
+@@ -56,6 +56,10 @@
+         toolpath = ['.'],
+         ENV = {'PATH' : os.environ['PATH']},
+         LIBS = [],
++        CC = "arm-linux-gnueabihf-gcc",
++        LD = "arm-linux-gnueabihf-g++",
++        AR ="arm-linux-gnueabihf-ar",
++        STRIP = "arm-linux-gnueabihf-strip"
+     )
+     env.MergeFlags(flags)
+     clean_envs[platform] = env

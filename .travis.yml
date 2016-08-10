@@ -1,6 +1,21 @@
 language: go
-notifications:
-  email:
-    recipients: jacques@supcik.net
-    on_success: change
-    on_failure: always
+
+go:
+  - 1.5
+  - 1.6
+  - tip
+
+matrix:
+  allow_failures:
+    - go: tip
+  fast_finish: true
+
+before_install:
+  - pwd
+  - ls
+  - sudo apt-get -qq update
+  - sudo apt-get install -y gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
+  - go get -d github.com/supcik-go/ws2811
+  - cd ${GOPATH}/src/github.com/supcik-go/ws2811
+  - git clone https://github.com/jgarff/rpi_ws281x.git
+  - cd rpi_ws281x
