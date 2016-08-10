@@ -11,18 +11,19 @@ matrix:
   fast_finish: true
 
 env:
-  - CC=arm-linux-gnueabihf-gcc
-  - CXX=arm-linux-gnueabihf-g++
-  - LD=arm-linux-gnueabihf-g++
-  - AR=arm-linux-gnueabihf-ar
-  - STRIP=arm-linux-gnueabihf-strip
-  - CGO_ENABLED=1
-  - GOOS=linux
-  - GOARCH=arm
-  - CC_FOR_TARGET=arm-linux-gnueabihf-gcc
-  - CXX_FOR_TARGET=arm-linux-gnueabihf-g++
-  - CPATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
-  - LIBRARY_PATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
+  global:
+    - CC=arm-linux-gnueabihf-gcc
+    - CXX=arm-linux-gnueabihf-g++
+    - LD=arm-linux-gnueabihf-g++
+    - AR=arm-linux-gnueabihf-ar
+    - STRIP=arm-linux-gnueabihf-strip
+    - CGO_ENABLED=1
+    - GOOS=linux
+    - GOARCH=arm
+    - CC_FOR_TARGET=arm-linux-gnueabihf-gcc
+    - CXX_FOR_TARGET=arm-linux-gnueabihf-g++
+    - CPATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
+    - LIBRARY_PATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
 
 before_install:
   - sudo apt-get -qq update
