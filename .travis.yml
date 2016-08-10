@@ -17,13 +17,6 @@ env:
     - LD=arm-linux-gnueabihf-g++
     - AR=arm-linux-gnueabihf-ar
     - STRIP=arm-linux-gnueabihf-strip
-    - CGO_ENABLED=1
-    - GOOS=linux
-    - GOARCH=arm
-    - CC_FOR_TARGET=arm-linux-gnueabihf-gcc
-    - CXX_FOR_TARGET=arm-linux-gnueabihf-g++
-    - CPATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
-    - LIBRARY_PATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
 
 before_install:
   - sudo apt-get -qq update
@@ -34,7 +27,13 @@ before_install:
   - cd rpi_ws281x
   - patch -i ${TRAVIS_BUILD_DIR}/01_cross.patch
   - scons
-  - sudo -E go install std
 
 install:
+  - export CGO_ENABLED=1
+  - export GOOS=linux
+  - export GOARCH=arm
+  - export CC_FOR_TARGET=arm-linux-gnueabihf-gcc
+  - export CXX_FOR_TARGET=arm-linux-gnueabihf-g++
+  - export CPATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
+  - export LIBRARY_PATH=${GOPATH}/src/github.com/supcik-go/ws2811/rpi_ws281x
   - patch -i ${TRAVIS_BUILD_DIR}/02_go.patch
