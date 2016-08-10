@@ -3,12 +3,6 @@ language: go
 go:
   - 1.5
   - 1.6
-  - tip
-
-matrix:
-  allow_failures:
-    - go: tip
-  fast_finish: true
 
 env:
   global:
