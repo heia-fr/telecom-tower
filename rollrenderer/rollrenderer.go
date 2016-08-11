@@ -24,7 +24,11 @@ import (
 	"fmt"
 	"github.com/heia-fr/telecom-tower/ledmatrix"
 	"github.com/heia-fr/telecom-tower/ledmatrix/font"
-	"github.com/heia-fr/telecom-tower/tower"
+)
+
+const (
+	columns = 128
+	rows = 8
 )
 
 type Line struct {
@@ -49,7 +53,7 @@ type BitmapMessage struct {
 // renderdeTextMessage convert a text to a LED bitmap matrix.
 // This method is used by the displayBuilder gorouting.
 func textToBitmap(text []Line, bg uint32) *ledmatrix.Matrix {
-	matrix := ledmatrix.NewMatrix(tower.Rows, 0)
+	matrix := ledmatrix.NewMatrix(rows, 0)
 	writer := ledmatrix.NewWriter(matrix)
 	writer.Spacer(matrix.Columns, 0) // Blank bootstrap
 
@@ -71,21 +75,21 @@ func textToBitmap(text []Line, bg uint32) *ledmatrix.Matrix {
 
 // blank generates a "space" from the given color
 func blank(len int, bg uint32) *ledmatrix.Matrix {
-	matrix := ledmatrix.NewMatrix(tower.Rows, tower.Columns)
+	matrix := ledmatrix.NewMatrix(rows, columns)
 	writer := ledmatrix.NewWriter(matrix)
-	writer.Spacer(tower.Columns, bg) // Blank spacer
+	writer.Spacer(columns, bg) // Blank spacer
 	return matrix
 }
 
 var bg = ledmatrix.RGB(0, 0, 0)
-var preamble = blank(tower.Columns, bg)
+var preamble = blank(columns, bg)
 
 func RenderMessage(message *TextMessage) *BitmapMessage {
 	// If body is nil, then reset preamble. This is used when static
 	// frames are sent to the tower and the next rolling message should
 	// start with a blank.
 	if message.Body == nil {
-		preamble = blank(tower.Columns, bg)
+		preamble = blank(columns, bg)
 		return nil
 	}
 
@@ -103,7 +107,7 @@ func RenderMessage(message *TextMessage) *BitmapMessage {
 	// then append tbe separator and aother copy of the message.
 	// We re-render the message and this is not optimal, but this
 	// is only usd for shirt messages, so this is OK.
-	for body.Columns < tower.Columns {
+	for body.Columns < columns {
 		body.Append(separator, textToBitmap(message.Body, bg))
 	}
 
@@ -112,19 +116,19 @@ func RenderMessage(message *TextMessage) *BitmapMessage {
 
 	// Compute the wrapper. The wrapper makes the link between the end
 	// and the start of the message, allowing it to "roll" properly.
-	wrapper := ledmatrix.Concat(separator, body.Slice(0, tower.Columns))
+	wrapper := ledmatrix.Concat(separator, body.Slice(0, columns))
 
 	// Send the bitmap message
 	result := &BitmapMessage{
 		Matrix:     ledmatrix.Concat(preamble, body, wrapper),
 		Preamble:   preamble.Columns,
-		Checkpoint: preamble.Columns + body.Columns - tower.Columns,
+		Checkpoint: preamble.Columns + body.Columns - columns,
 	}
 
 	// Compute the next preamble using the last frame of the body and
 	// the conclusion
 	preamble = ledmatrix.Concat(
-		body.Slice(body.Columns-tower.Columns,
+		body.Slice(body.Columns- columns,
 			body.Columns), conclusion)
 	return result
 }
